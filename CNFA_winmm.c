@@ -106,7 +106,7 @@ void CALLBACK HANDLEMIC(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwpa
 
 	case MM_WIM_DATA:
 		ob = (w->GOBUFFRec+(BUFFS))%BUFFS;
-		w->callback(  (struct SoundDriver*)w, (short*)(w->WavBuffIn[w->GOBUFFRec]).lpData, 0, w->buffer, 0 );
+		w->callback(  (struct CNFADriver*)w, (short*)(w->WavBuffIn[w->GOBUFFRec]).lpData, 0, w->buffer, 0 );
 		waveInAddBuffer(w->hMyWaveIn,&(w->WavBuffIn[w->GOBUFFRec]),sizeof(WAVEHDR));
 		w->GOBUFFRec = ( w->GOBUFFRec + 1 ) % BUFFS;
 		break;
@@ -130,7 +130,7 @@ void CALLBACK HANDLESINK(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwp
 		break;
 
 	case MM_WOM_DONE:
-		w->callback( (struct SoundDriver*)w, 0, (short*)(w->WavBuffOut[w->GOBUFFPlay]).lpData, 0, w->buffer );
+		w->callback( (struct CNFADriver*)w, 0, (short*)(w->WavBuffOut[w->GOBUFFPlay]).lpData, 0, w->buffer );
 		waveOutWrite( w->hMyWaveOut, &(w->WavBuffOut[w->GOBUFFPlay]),sizeof(WAVEHDR) );
 		w->GOBUFFPlay = ( w->GOBUFFPlay + 1 ) % BUFFS;
 		break;
@@ -138,7 +138,7 @@ void CALLBACK HANDLESINK(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwp
 }
 
 
-static struct CNFADriverWin * InitWinSound( struct CNFADriverWin * r )
+static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 {
 	int i;
 	WAVEFORMATEX wfmt;
