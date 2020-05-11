@@ -20,8 +20,10 @@
 #include <jni.h>
 #include <native_activity.h>
 
+#ifndef PRINTF_NO_OVERRIDDE
 #define LOGI(...)  ((void)__android_log_print(ANDROID_LOG_INFO, APPNAME, __VA_ARGS__))
 #define printf( x...) LOGI( x )
+#endif
 
 struct CNFADriverAndroid
 {
@@ -59,14 +61,14 @@ struct CNFADriverAndroid
 void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid*)context;
-	r->callback( r, r->recorderBuffer, 0, r->buffsz, 0 );
+	r->callback( (struct CNFADriver*)r, r->recorderBuffer, 0, r->buffsz, 0 );
 	(*r->recorderBufferQueue)->Enqueue( r->recorderBufferQueue, r->recorderBuffer, r->recorderBufferSizeBytes);
 }
 
 void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid*)context;
-	r->callback( r, 0, r->playerBuffer, 0, r->buffsz );
+	r->callback( (struct CNFADriver*)r, 0, r->playerBuffer, 0, r->buffsz );
 	(*r->playerBufferQueue)->Enqueue( r->playerBufferQueue, r->playerBuffer, r->playerBufferSizeBytes);
 }
 
@@ -106,7 +108,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 			SL_BYTEORDER_LITTLEENDIAN,
 		};
 		SLDataLocator_AndroidSimpleBufferQueue loc_bq_play = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2};
-		SLDataSink source = {&loc_bq_play, &format_pcm};
+		SLDataSource source = {&loc_bq_play, &format_pcm};
 		const SLInterfaceID ids[1] = {SL_IID_VOLUME};
 		const SLboolean req[1] = {SL_BOOLEAN_TRUE};
 		const SLInterfaceID id[1] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
@@ -212,6 +214,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 		result = (*r->playerBufferQueue)->Clear(r->playerBufferQueue);
 		assert(SL_RESULT_SUCCESS == result); (void)result;
 		r->playerBuffer = malloc( r->playerBufferSizeBytes );
+		memset( r->playerBuffer, 0, r->playerBufferSizeBytes );
 		result = (*r->playerBufferQueue)->Enqueue(r->playerBufferQueue, r->playerBuffer, r->playerBufferSizeBytes );
 		assert(SL_RESULT_SUCCESS == result); (void)result;
 		result = (*r->playerPlay)->SetPlayState(r->playerPlay, SL_PLAYSTATE_PLAYING);
@@ -246,13 +249,13 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 	return r;
 }
 
-int SoundStateAndroid( void * v )
+int CNFAStateAndroid( void * v )
 {
 	struct CNFADriverAndroid * soundobject = (struct CNFADriverAndroid *)v;
 	return ((soundobject->recorderObject)?1:0) | ((soundobject->playerObject)?2:0);
 }
 
-void CloseSoundAndroid( void * v )
+void CloseCNFAAndroid( void * v )
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid *)v;
     // destroy audio recorder object, and invalidate all associated interfaces
