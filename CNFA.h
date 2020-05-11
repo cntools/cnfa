@@ -13,24 +13,16 @@
 #ifndef _CNFA_H
 #define _CNFA_H
 
-#ifdef CNFA_IMPLEMENTATION
-#include "CNFA.c"
-#include "CNFA_null.c"
-#if defined(WINDOWS) || defined(WIN32) || defined(WIN64)
-#include "CNFA_winmm.c"
-#elif defined( ANDROID ) || defined( __android__ )
-#include "CNFA_android.c"
-#else
-#include "CNFA_pulse.c"
-#include "CNFA_alsa.c"
-#endif
-#endif
 
 
 //this #define is per-platform.  For instance on Linux, you have ALSA, Pulse and null
-#define MAX_SOUND_DRIVERS 4
+#define MAX_CNFA_DRIVERS 4
 
 struct CNFADriver;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //NOTE: Some drivers have synchronous duplex mode, other drivers will use two different callbacks.  If ether is unavailable, it will be NULL.
 //I.e. if `out` is null, only use in to read.  If in is null, only place samples in out.
@@ -75,6 +67,26 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 
 #define REGISTER_CNFA( cnfadriver, priority, name, function ) \
 	void __attribute__((constructor)) REGISTER##cnfadriver() { RegCNFADriver( priority, name, function ); }
+
+
+#ifdef CNFA_IMPLEMENTATION
+#include "CNFA.c"
+#include "CNFA_null.c"
+#if defined(WINDOWS) || defined(WIN32) || defined(WIN64)
+#include "CNFA_winmm.c"
+#elif defined( ANDROID ) || defined( __android__ )
+#include "CNFA_android.c"
+#else
+#include "CNFA_pulse.c"
+#include "CNFA_alsa.c"
+#endif
+#endif
+
+
+#ifdef __cplusplus
+};
+#endif
+
 
 
 #endif

@@ -9,25 +9,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static SoundInitFn * CNFADrivers[MAX_SOUND_DRIVERS];
-static char * CNFADriverNames[MAX_SOUND_DRIVERS];  //XXX: There's a bug in my compiler, this should be 'static'
-static int CNFADriverPriorities[MAX_SOUND_DRIVERS];
-/*
-void CleanupSound() __attribute__((destructor));
-void CleanupSound()
-{
-	int i;
-	for( i = 0; i < MAX_SOUND_DRIVERS; i++ )
-	{
-		if( CNFADriverNames[i] )
-		{
-			free( CNFADriverNames[i] );
-		}
-	}
-}
-*/
+static CNFAInitFn * CNFADrivers[MAX_CNFA_DRIVERS];
+static char * CNFADriverNames[MAX_CNFA_DRIVERS];
+static int CNFADriverPriorities[MAX_CNFA_DRIVERS];
 
-void RegCNFADriver( int priority, const char * name, SoundInitFn * fn )
+void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn )
 {
 	int j;
 
@@ -36,7 +22,7 @@ void RegCNFADriver( int priority, const char * name, SoundInitFn * fn )
 		return;
 	}
 
-	for( j = MAX_SOUND_DRIVERS-1; j >= 0; j-- )
+	for( j = MAX_CNFA_DRIVERS-1; j >= 0; j-- )
 	{
 		//Cruise along, find location to insert
 		if( j > 0 && ( !CNFADrivers[j-1] || CNFADriverPriorities[j-1] < priority ) )
@@ -55,7 +41,7 @@ void RegCNFADriver( int priority, const char * name, SoundInitFn * fn )
 	}
 }
 
-struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, const char * our_source_name, CNFACBType cb, int reqSPS,
+struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPS,
 	int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
 {
 
@@ -105,7 +91,7 @@ int CNFAState( struct CNFADriver * cnfaobject )
 {
 	if( cnfaobject )
 	{
-		return cnfaobject->SoundStateFn( cnfaobject );
+		return cnfaobject->StateFn( cnfaobject );
 	}
 	return -1;
 }

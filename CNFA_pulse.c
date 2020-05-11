@@ -105,8 +105,7 @@ static void stream_record_cb(pa_stream *s, size_t length, void *userdata)
 {
 	struct CNFADriverPulse * r = (struct CNFADriverPulse*)userdata;
 
-	int playbacksamples = 0;
-	float * bufr;
+	uint16_t * bufr;
 
     if (pa_stream_peek(r->rec, (void*)&bufr, &length) < 0) {
         fprintf(stderr, ("pa_stream_peek() failed: %s\n"), pa_strerror(pa_context_errno(r->pa_ctx)));

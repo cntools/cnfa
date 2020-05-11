@@ -5,8 +5,6 @@
 #include <alsa/asoundlib.h>
 #include <string.h>
 
-#define BUFFERSETS 4
-
 struct CNFADriverAlsa
 {
 	void (*CloseFn)( void * object );
@@ -29,8 +27,6 @@ struct CNFADriverAlsa
 	char playing;
 	char recording;
 };
-
-static struct CNFADriverAlsa* InitALSA( struct CNFADriverAlsa * r );
 
 int CNFAStateAlsa( void * v )
 {
@@ -239,6 +235,8 @@ void * RecThread( void * v )
 		r->callback( (struct CNFADriver *)r, samples, 0, err, 0 );
 	} while( 1 );
 	r->recording = 0;
+	fprintf( stderr, "ALSA Recording Stopped\n" );
+	return 0;
 }
 
 void * PlayThread( void * v )
@@ -266,7 +264,8 @@ void * PlayThread( void * v )
 		r->playing = 1;
 	}
 	r->playing = 0;
-	fprintf( stderr, "Warning: ALSA Playback Stopped\n" );
+	fprintf( stderr, "ALSA Playback Stopped\n" );
+	return 0;
 }
 
 static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
@@ -370,7 +369,7 @@ fail:
 
 
 
-void * InitALSA( CNFACBType cb, const char * yourn_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
+void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
 {
 	struct CNFADriverAlsa * r = malloc( sizeof( struct CNFADriverAlsa ) );
 
@@ -392,5 +391,5 @@ void * InitALSA( CNFACBType cb, const char * yourn_name, int reqSPS, int reqChan
 	return InitALSA(r);
 }
 
-REGISTER_CNFA( ALSA, 10, "ALSA", InitALSA );
+REGISTER_CNFA( ALSA, 10, "ALSA", InitALSADriver );
 

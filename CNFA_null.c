@@ -1,6 +1,6 @@
 //Copyright 2015 <>< Charles Lohr under the ColorChord License.
 
-#include "sound.h"
+#include "CNFA.h"
 #include "os_generic.h"
 #include <stdlib.h>
 #include "parameters.h"
@@ -16,12 +16,12 @@ struct CNFADriverNull
 	void * opaque;
 };
 
-void CloseCNFANull( struct CNFADriverNull * object )
+void CloseCNFANull( void * object )
 {
 	free( object );
 }
 
-int CNFAStateNull( struct CNFADriverNull * object )
+int CNFAStateNull( void * object )
 {
 	return 0;
 }
@@ -32,7 +32,7 @@ void * InitCNFANull( CNFACBType cb, const char * your_name, int reqSPS, int reqC
 	struct CNFADriverNull * r = malloc( sizeof( struct CNFADriverNull ) );
 	r->CloseFn = CloseCNFANull;
 	r->StateFn = CNFAStateNull;
-	r->cnfacb = cb;
+	r->callback = cb;
 	r->sps = reqSPS;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
