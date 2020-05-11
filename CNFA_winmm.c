@@ -138,7 +138,7 @@ void CALLBACK HANDLESINK(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwp
 }
 
 
-static struct CNFADriverWin * InitWinSound( struct CNFADriverWin * r )
+static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 {
 	int i;
 	WAVEFORMATEX wfmt;
