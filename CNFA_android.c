@@ -16,14 +16,8 @@
 #include <SLES/OpenSLES_Android.h>
 
 #include <android_native_app_glue.h>
-#include <android/log.h>
 #include <jni.h>
 #include <native_activity.h>
-
-#ifndef PRINTF_NO_OVERRIDDE
-#define LOGI(...)  ((void)__android_log_print(ANDROID_LOG_INFO, APPNAME, __VA_ARGS__))
-#define printf( x...) LOGI( x )
-#endif
 
 struct CNFADriverAndroid
 {
@@ -75,7 +69,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r )
 {
 	SLresult result;
-	LOGI( "Starting InitAndroidDriver\n" );
+	printf( "Starting InitAndroidDriver\n" );
 	
 	// create engine
 	result = slCreateEngine(&r->engineObject, 0, NULL, 0, NULL, NULL);
@@ -96,7 +90,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
 	if( r->channelsPlay )
 	{
-		LOGI("create output mix");
+		printf("create output mix");
 
 		SLDataFormat_PCM format_pcm ={
 			SL_DATAFORMAT_PCM,
@@ -124,7 +118,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 		// create audio player
 		result = (*r->engineEngine)->CreateAudioPlayer(r->engineEngine, &r->playerObject, &source, &sink, 1, id, req);
 		if (SL_RESULT_SUCCESS != result) {
-			LOGI( "CreateAudioPlayer failed\n" );
+			printf( "CreateAudioPlayer failed\n" );
 			return JNI_FALSE;
 		}
 
@@ -132,7 +126,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 		// realize the audio player
 		result = (*r->playerObject)->Realize(r->playerObject, SL_BOOLEAN_FALSE);
 		if (SL_RESULT_SUCCESS != result) {
-			LOGI( "AudioPlayer Realize failed: %d\n", result );
+			printf( "AudioPlayer Realize failed: %d\n", result );
 			return JNI_FALSE;
 		}
 
@@ -151,7 +145,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 		assert(SL_RESULT_SUCCESS == result);
 		(void)result;
 
-		LOGI( "===================== Player init ok.\n" );
+		printf( "===================== Player init ok.\n" );
 	}
 
 	if( r->channelsRec )
@@ -179,14 +173,14 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 
 		result = (*r->engineEngine)->CreateAudioRecorder(r->engineEngine, &r->recorderObject, &audioSrc, &audioSnk, 1, id, req);
 		if (SL_RESULT_SUCCESS != result) {
-			LOGI( "CreateAudioRecorder failed\n" );
+			printf( "CreateAudioRecorder failed\n" );
 			return JNI_FALSE;
 		}
 
 		// realize the audio recorder
 		result = (*r->recorderObject)->Realize(r->recorderObject, SL_BOOLEAN_FALSE);
 		if (SL_RESULT_SUCCESS != result) {
-			LOGI( "AudioRecorder Realize failed: %d\n", result );
+			printf( "AudioRecorder Realize failed: %d\n", result );
 			return JNI_FALSE;
 		}
 
@@ -245,7 +239,7 @@ static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r
 	}
 
 
-	LOGI( "Complete Init Sound Android\n" );
+	printf( "Complete Init Sound Android\n" );
 	return r;
 }
 
