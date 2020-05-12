@@ -237,7 +237,7 @@ void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPS, int reqCh
 	r->GOBUFFPlay = 0;
 	r->GOBUFFRec = 0;
 
-	return InitWinSound(r);
+	return InitWinCNFA(r);
 }
 
 REGISTER_CNFA( WinCNFA, 10, "WIN", InitCNFAWin );
