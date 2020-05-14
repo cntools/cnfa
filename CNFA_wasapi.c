@@ -6,6 +6,18 @@
 #define WASAPIPRINT(message) (printf("[WASAPI] %s", message))
 #define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x&X", message, error))
 
+// Forward Declarations
+void CloseCNFAWASAPI(void* stateObj);
+int CNFAStateWASAPI(void* object);
+static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initState);
+static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture);
+static void WASAPIPrintDeviceList_Simple();
+static void WASAPIPrintDeviceList(EDataFlow dataFlow);
+void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName,
+                           int reqSampleRate,
+						   int reqChannelsIn, int reqChannelsOut, int sugBufferSize,
+						   const char* inputDevice, const char* outputDevice);
+
 struct CNFADriverWASAPI
 {
     void (*CloseFn)(void* object);
@@ -47,10 +59,14 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	State = initState;
 
 	HRESULT ErrorCode;
-	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&(State->DeviceEnumerator));
-	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device enumerator. "); return State; }
+	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, 
+								 &IID_IMMDeviceEnumerator, (void**)&(State->DeviceEnumerator));
+	if (FAILED(ErrorCode)) {
+		WASAPIERROR(ErrorCode, "Failed to get device enumerator. ");
+		return State;
+	}
 
-	WASAPIPrintDeviceList();
+	WASAPIPrintDeviceList_Simple();
 
 	IMMDevice* Device;
 	Device = WASAPIGetDefaultDevice(FALSE);
@@ -62,7 +78,9 @@ static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture)
 {
 	HRESULT ErrorCode;
 	IMMDevice* Device;
-	ErrorCode = State->DeviceEnumerator->lpVtbl->GetDefaultAudioEndpoint(State->DeviceEnumerator, isCapture ? eCapture : eRender, eMultimedia, (void**)&Device);
+	ErrorCode = State->DeviceEnumerator->lpVtbl
+		->GetDefaultAudioEndpoint(State->DeviceEnumerator, 
+			isCapture ? eCapture : eRender, eMultimedia, &Device);
 	if (FAILED(ErrorCode))
 	{
 		WASAPIERROR(ErrorCode, "Failed to get default device.");
@@ -71,7 +89,7 @@ static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture)
 	return Device;
 }
 
-static void WASAPIPrintDeviceList()
+static void WASAPIPrintDeviceList_Simple()
 {
 	WASAPIPrintDeviceList(eRender);
 	WASAPIPrintDeviceList(eCapture);
@@ -81,31 +99,51 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 {
 	WASAPIPRINT(strcat((dataFlow == eCapture ? "Capture" : "Render"), " Devices:"));
 	IMMDeviceCollection* Devices;
-	HRESULT ErrorCode = State->DeviceEnumerator->lpVtbl->EnumAudioEndpoints(State->DeviceEnumerator, dataFlow, DEVICE_STATE_ACTIVE, (void**)&Devices);
-	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio endpoints."); return; }
+	HRESULT ErrorCode = State->DeviceEnumerator->lpVtbl
+		->EnumAudioEndpoints(State->DeviceEnumerator, dataFlow,
+			DEVICE_STATE_ACTIVE, &Devices);
+	if (FAILED(ErrorCode)) { 
+		WASAPIERROR(ErrorCode, "Failed to get audio endpoints.");
+		return;
+	}
 
 	UINT32 DeviceCount;
 	ErrorCode = Devices->lpVtbl->GetCount(Devices, &DeviceCount);
-	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio endpoint count."); return; }
+	if (FAILED(ErrorCode)) { 
+		WASAPIERROR(ErrorCode, "Failed to get audio endpoint count.");
+		return; 
+	}
 
 	for (UINT32 DeviceIndex = 0; DeviceIndex < DeviceCount; DeviceIndex++)
 	{
 		IMMDevice* Device;
-		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, (void**)&Device);
-		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device."); continue; }
+		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, &Device);
+		if (FAILED(ErrorCode)) {
+			WASAPIERROR(ErrorCode, "Failed to get audio device.");
+			continue;
+		}
 
 		LPWSTR* DeviceID;
 		ErrorCode = Device->lpVtbl->GetId(Device, &DeviceID);
-		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); continue; }
+		if (FAILED(ErrorCode)) {
+			WASAPIERROR(ErrorCode, "Failed to get audio device ID.");
+			continue;
+		}
 
 		IPropertyStore* Properties;
-		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, (void**)&Properties);
-		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device properties."); continue; }
+		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, &Properties);
+		if (FAILED(ErrorCode)) {
+			WASAPIERROR(ErrorCode, "Failed to get device properties.");
+			continue;
+		}
 		
 		LPWSTR DeviceFriendlyName = L"[Name Retrieval Failed]";
 		DWORD PropertyCount;
 		ErrorCode = Properties->lpVtbl->GetCount(Properties, &PropertyCount);
-		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device property count."); continue; }
+		if (FAILED(ErrorCode)) {
+			WASAPIERROR(ErrorCode, "Failed to get device property count.");
+			continue;
+		}
 		
 		// TODO: Read property store for friendly name.
 
