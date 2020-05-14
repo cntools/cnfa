@@ -1,10 +1,26 @@
 #include "CNFA.h"
+//#include "CNFA_wasapi_utils.h"
+#include <InitGuid.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
 #include "windows.h"
 
-#define WASAPIPRINT(message) (printf("[WASAPI] %s", message))
-#define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x&X", message, error))
+#define WASAPIPRINT(message) (printf("[WASAPI] %s\n", message))
+#define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%X\n", message, error))
+
+// Forward declarations
+void CloseCNFAWASAPI(void* stateObj);
+int CNFAStateWASAPI(void* object);
+static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initState);
+static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture);
+static void WASAPIPrintAllDeviceLists();
+static void WASAPIPrintDeviceList(EDataFlow dataFlow);
+void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice);
+
+DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2L, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
+DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395L, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
+
+DEFINE_GUID(CNFA_GUID, 0x899081C7L, 0x9428, 0x4103, 0x87, 0x93, 0x26, 0x47, 0xE5, 0xEA, 0xA2, 0xB4); // TODO: Remove this and generate it based on the application name instead
 
 struct CNFADriverWASAPI
 {
@@ -14,14 +30,20 @@ struct CNFADriverWASAPI
 	short ChannelCountOut;
 	short ChannelCountIn;
 	int SampleRate;
-	void* Opaque; // TODO: WTF is this?
+	void* Opaque; // Not relevant to us
 
 	const char* SessionName;
 
+	// Everything below here is for internal use only. Do not attempt to interact with these items.
 	IMMDeviceEnumerator* DeviceEnumerator;
+	IMMDevice* Device;
 	IAudioClient* Client;
 	IAudioCaptureClient* CaptureClient;
 	WAVEFORMATEX* MixFormat;
+	INT32 BytesPerFrame;
+	UINT64 BufferLength;
+	UINT64 ActualBufferDuration;
+	BOOL StreamReady;
 };
 
 // This is where the driver's current state is stored.
@@ -30,10 +52,12 @@ static struct CNFADriverWASAPI* State;
 void CloseCNFAWASAPI(void* stateObj)
 {
 	struct CNFADriverWASAPI* state = (struct CNFADriverWASAPI*)stateObj;
-	if(state)
+	if(state != NULL)
 	{
 		// TODO: Cleanup stuff.
 		free(stateObj);
+		// All COM objects.Release()
+		CoUninitialize();
 	}
 }
 
@@ -45,15 +69,54 @@ int CNFAStateWASAPI(void* object)
 static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initState)
 {
 	State = initState;
+	State->BufferLength = 50 * 10000; // 50 ms, in ticks.
+	State->StreamReady = FALSE;
 
 	HRESULT ErrorCode;
+	ErrorCode = CoInitialize(NULL); // TODO: Consider using CoInitializeEx if needed for threading.
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "COM INIT FAILED!"); return State; }
+
 	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&(State->DeviceEnumerator));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device enumerator. "); return State; }
 
-	WASAPIPrintDeviceList();
+	WASAPIPrintAllDeviceLists();
 
-	IMMDevice* Device;
-	Device = WASAPIGetDefaultDevice(FALSE);
+	State->Device = WASAPIGetDefaultDevice(FALSE);
+
+	// TODO: Implement detection.
+	BOOL DeviceIsCapture = FALSE;
+
+	ErrorCode = State->Device->lpVtbl->Activate(State->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(State->Client));
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio client. "); return State; }
+
+	ErrorCode = State->Client->lpVtbl->GetMixFormat(State->Client, (void**)&(State->MixFormat));
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get mix format. "); return State; }
+
+	printf("[WASAPI] Mix format is %d channel, %dHz sample rate, %db per sample.", State->MixFormat->nChannels, State->MixFormat->nSamplesPerSec, State->MixFormat->wBitsPerSample);
+	State->BytesPerFrame = State->MixFormat->nChannels * (State->MixFormat->wBitsPerSample / 8);
+
+	State->SampleRate = State->MixFormat->nSamplesPerSec;
+
+	UINT32 StreamFlags;
+	if (DeviceIsCapture == TRUE) { StreamFlags = AUDCLNT_STREAMFLAGS_NOPERSIST; }
+	else if (DeviceIsCapture == FALSE) { StreamFlags = AUDCLNT_STREAMFLAGS_LOOPBACK; }
+	else { WASAPIPRINT("[ERR] Device type was not determined!"); return State; } // TODO: This doesn't make sense now but it will.
+
+	ErrorCode = State->Client->lpVtbl->Initialize(State->Client, AUDCLNT_SHAREMODE_SHARED, StreamFlags, State->BufferLength, 0, &(State->MixFormat), &CNFA_GUID);
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not init audio client."); return State; }
+
+	UINT32 BufferFrameCount;
+	ErrorCode = State->Client->lpVtbl->GetBufferSize(State->Client, &BufferFrameCount);
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not get audio client buffer size."); return State; }
+
+	ErrorCode = State->Client->lpVtbl->GetService(State->Client, &IID_IAudioCaptureClient, (void**)&(State->CaptureClient));
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not get audio capture client."); return State; }
+
+	State->ActualBufferDuration = (State->BufferLength * BufferFrameCount) / State->MixFormat->nSamplesPerSec;
+
+	ErrorCode = State->Client->lpVtbl->Start(State->Client);
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not start audio client."); return State; }
+	State->StreamReady = TRUE;
 
 	return State;
 }
@@ -71,7 +134,7 @@ static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture)
 	return Device;
 }
 
-static void WASAPIPrintDeviceList()
+static void WASAPIPrintAllDeviceLists()
 {
 	WASAPIPrintDeviceList(eRender);
 	WASAPIPrintDeviceList(eCapture);
@@ -102,14 +165,15 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, (void**)&Properties);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device properties."); continue; }
 		
-		LPWSTR DeviceFriendlyName = L"[Name Retrieval Failed]";
-		DWORD PropertyCount;
-		ErrorCode = Properties->lpVtbl->GetCount(Properties, &PropertyCount);
-		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device property count."); continue; }
-		
-		// TODO: Read property store for friendly name.
+		PROPVARIANT Variant;
+		PropVariantInit(&Variant);
 
-		printf("[WASAPI] [%d]: \"%ls\" = \"%ls\"", DeviceIndex, DeviceFriendlyName, DeviceID);
+		// TODO: Figure out how to get device name.
+		//ErrorCode = Properties->lpVtbl->GetValue(Properties, ???, &Variant);
+
+		LPWSTR DeviceFriendlyName = L"[Name Retrieval Failed]";
+
+		printf("[WASAPI] [%d]: \"%ls\" = \"%ls\"\n", DeviceIndex, DeviceFriendlyName, DeviceID);
 	}
 
 }
