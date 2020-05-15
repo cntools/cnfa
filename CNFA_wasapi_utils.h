@@ -17,8 +17,11 @@
 
 #ifndef REFIID 
 #define REFIID const IID * __MIDL_CONST
-
 #endif
+
+#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+        EXTERN_C const GUID DECLSPEC_SELECTANY name \
+                = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 
 #if defined (__TINYC__)
 #define _COM_Outptr_
@@ -54,6 +57,7 @@ typedef unsigned short VARTYPE;
 typedef BYTE PROPVAR_PAD1;
 typedef BYTE PROPVAR_PAD2;
 typedef ULONG PROPVAR_PAD3;
+
 typedef struct tagDEC {
     USHORT wReserved;
     BYTE scale;
@@ -77,11 +81,86 @@ struct tagPROPVARIANT {
         DECIMAL decVal;
     };
 };
-#endif
 
-#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-        EXTERN_C const GUID DECLSPEC_SELECTANY name \
-                = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#define _Inout_updates_(dwCount)
+#define FAR
+#define WINOLEAPI
+typedef interface IUnknown IUnknown;
+typedef  IUnknown *LPUNKNOWN;
+typedef struct tagMULTI_QI
+{
+    const IID *pIID;
+    IUnknown *pItf;
+    HRESULT hr;
+} 	MULTI_QI;
+
+typedef struct _COAUTHIDENTITY
+{
+    /* [size_is] */ USHORT *User;
+    /* [range] */ ULONG UserLength;
+    /* [size_is] */ USHORT *Domain;
+    /* [range] */ ULONG DomainLength;
+    /* [size_is] */ USHORT *Password;
+    /* [range] */ ULONG PasswordLength;
+    ULONG Flags;
+} 	COAUTHIDENTITY;
+
+typedef struct _COAUTHINFO
+{
+    DWORD dwAuthnSvc;
+    DWORD dwAuthzSvc;
+    LPWSTR pwszServerPrincName;
+    DWORD dwAuthnLevel;
+    DWORD dwImpersonationLevel;
+    COAUTHIDENTITY *pAuthIdentityData;
+    DWORD dwCapabilities;
+} 	COAUTHINFO;
+
+typedef struct _COSERVERINFO
+{
+    DWORD dwReserved1;
+    LPWSTR pwszName;
+    COAUTHINFO *pAuthInfo;
+    DWORD dwReserved2;
+} 	COSERVERINFO;
+
+EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
+CoCreateInstanceFromApp(
+    _In_ REFCLSID Clsid,
+    _In_opt_ IUnknown* punkOuter,
+    _In_ DWORD dwClsCtx,
+    _In_opt_ PVOID reserved,
+    _In_ DWORD dwCount,
+    _Inout_updates_(dwCount) MULTI_QI* pResults
+);
+
+HRESULT CoCreateInstance(
+    _In_     REFCLSID rclsid,
+    _In_opt_ LPUNKNOWN pUnkOuter,
+    _In_     DWORD dwClsContext,
+    _In_     REFIID riid,
+    _COM_Outptr_ LPVOID FAR* ppv)
+{
+    MULTI_QI    OneQI;
+    HRESULT     hr;
+    OneQI.pItf = NULL;
+    OneQI.pIID = riid;
+    hr = CoCreateInstanceFromApp( rclsid, pUnkOuter, dwClsContext, NULL, 1, &OneQI );
+    *ppv = OneQI.pItf;
+    return FAILED(hr) ? hr : OneQI.hr;
+}
+
+HRESULT CoCreateInstanceEx(
+    _In_ REFCLSID                      Clsid,
+    _In_opt_ IUnknown     *            punkOuter,
+    _In_ DWORD                         dwClsCtx,
+    _In_opt_ COSERVERINFO *            pServerInfo,
+    _In_ DWORD                         dwCount,
+    _Inout_updates_(dwCount) MULTI_QI *pResults )
+{
+    return CoCreateInstanceFromApp(Clsid, punkOuter, dwClsCtx, pServerInfo, dwCount, pResults);
+}
+#endif
 
 // forward declarations
 typedef struct IMMDevice IMMDevice;
