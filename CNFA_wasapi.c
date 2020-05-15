@@ -98,6 +98,11 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	State->Device = WASAPIGetDefaultDevice(FALSE);
 
+	LPWSTR* DeviceID;
+	ErrorCode = State->Device->lpVtbl->GetId(State->Device, &DeviceID);
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return State;; }
+	else { printf("[WASAPI] Using device ID \"%ls\".\n", DeviceID); }
+
 	// TODO: Implement detection.
 	BOOL DeviceIsCapture = FALSE;
 
@@ -119,16 +124,17 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	UINT32 StreamFlags;
 	if (DeviceIsCapture == TRUE) { StreamFlags = AUDCLNT_STREAMFLAGS_NOPERSIST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK; }
-	else if (DeviceIsCapture == FALSE) { StreamFlags = AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK; }
+	else if (DeviceIsCapture == FALSE) { StreamFlags = (AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK); }
 	else { WASAPIPRINT("[ERR] Device type was not determined!"); return State; } // TODO: This doesn't make sense now but it will.
 
-	ErrorCode = State->Client->lpVtbl->Initialize(State->Client, AUDCLNT_SHAREMODE_SHARED, StreamFlags, MinimumInterval, MinimumInterval, &(State->MixFormat), &CNFA_GUID);
+	// TODO: Allow the target application to influence the interval we choose. Super realtime apps may require MinimumInterval.
+	ErrorCode = State->Client->lpVtbl->Initialize(State->Client, AUDCLNT_SHAREMODE_SHARED, StreamFlags, DefaultInterval, DefaultInterval, State->MixFormat, &CNFA_GUID);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not init audio client."); return State; }
 
 	State->EventHandleIn = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (State->EventHandleIn == NULL) { WASAPIERROR(E_FAIL, "Failed to make event handle."); return State; }
 
-	ErrorCode = State->Client->lpVtbl->SetEventHandle(State->Client, &(State->EventHandleIn));
+	ErrorCode = State->Client->lpVtbl->SetEventHandle(State->Client, State->EventHandleIn);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to set event handler."); return State; }
 
 	UINT32 BufferFrameCount;
@@ -217,7 +223,7 @@ void* ProcessEventAudioIn(void* stateObj)
 	{
 		// Waits up to infinite time to get the next event from the audio system.
 		// TODO: Consider adding a timeout if needed?
-		DWORD WaitResult = WaitForSingleObject(state->EventHandleIn, 0);
+		DWORD WaitResult = WaitForSingleObject(state->EventHandleIn, INFINITE);
 
 		ErrorCode = state->CaptureClient->lpVtbl->GetNextPacketSize(state->CaptureClient, &PacketLength);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio packet size."); continue; }
@@ -243,7 +249,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 			else { Released = TRUE; }
 
-			printf("[WASAPI] We got data! \\o/");
+			printf("[WASAPI] We got data! \\o/ Size %d\n", Size);
 			// Uhh so what do we do with the data now???
 		}
 
