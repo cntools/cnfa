@@ -1,6 +1,7 @@
 #include "CNFA.h"
-#include <audioclient.h>
-#include <mmdeviceapi.h>
+//#include <audioclient.h>
+//#include <mmdeviceapi.h>
+#include "CNFA_wasapi_utils.h"
 #include "windows.h"
 
 #define WASAPIPRINT(message) (printf("[WASAPI] %s", message))
