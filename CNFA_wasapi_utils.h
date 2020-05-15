@@ -50,7 +50,11 @@ typedef struct tWAVEFORMATEX WAVEFORMATEX;
                     CLSCTX_INPROC_HANDLER| \
                     CLSCTX_LOCAL_SERVER| \
                     CLSCTX_REMOTE_SERVER)
-{
+typedef unsigned short VARTYPE;
+typedef BYTE PROPVAR_PAD1;
+typedef BYTE PROPVAR_PAD2;
+typedef ULONG PROPVAR_PAD3;
+typedef struct tagDEC {
     USHORT wReserved;
     BYTE scale;
     BYTE sign;
