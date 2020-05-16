@@ -278,6 +278,8 @@ void* ProcessEventAudioIn(void* stateObj)
 			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, (FramesAvailable * state->MixFormat->nChannels) / 2, 0);
 
 			//printf("[WASAPI] Callback done.\n");
+
+			free(AudioData);
 		}
 
 		if (!Released)
