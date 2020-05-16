@@ -156,16 +156,7 @@ HRESULT CoCreateInstance(
     _In_opt_ LPUNKNOWN pUnkOuter,
     _In_     DWORD dwClsContext,
     _In_     REFIID riid,
-    _COM_Outptr_ LPVOID FAR* ppv)
-{
-    MULTI_QI    OneQI;
-    HRESULT     hr;
-    OneQI.pItf = NULL;
-    OneQI.pIID = riid;
-    hr = CoCreateInstanceFromApp( rclsid, pUnkOuter, dwClsContext, NULL, 1, &OneQI );
-    *ppv = OneQI.pItf;
-    return FAILED(hr) ? hr : OneQI.hr;
-}
+    _COM_Outptr_ LPVOID FAR* ppv);
 
 HRESULT CoCreateInstanceEx(
     _In_ REFCLSID                      Clsid,
@@ -173,10 +164,7 @@ HRESULT CoCreateInstanceEx(
     _In_ DWORD                         dwClsCtx,
     _In_opt_ COSERVERINFO *            pServerInfo,
     _In_ DWORD                         dwCount,
-    _Inout_updates_(dwCount) MULTI_QI *pResults )
-{
-    return CoCreateInstanceFromApp(Clsid, punkOuter, dwClsCtx, pServerInfo, dwCount, pResults);
-}
+    _Inout_updates_(dwCount) MULTI_QI *pResults );
 
 EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE 
 CoInitialize(_In_opt_ LPVOID pvReserved);
