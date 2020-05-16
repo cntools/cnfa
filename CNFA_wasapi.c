@@ -1,7 +1,8 @@
 #include "CNFA.h"
+#include "CNFA_wasapi_utils.h"
+//#include <InitGuid.h>
 //#include <audioclient.h>
 //#include <mmdeviceapi.h>
-#include "CNFA_wasapi_utils.h"
 #include "windows.h"
 #include "os_generic.h"
 
@@ -23,25 +24,6 @@ DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395L, 0xE52F, 0x467C, 0x8E, 0x3D, 0
 DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4CL, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
 DEFINE_GUID(IID_IAudioCaptureClient, 0xC8ADBD64L, 0xE71E, 0x48a0, 0xA4, 0xDE, 0x18, 0x5C, 0x39, 0x5C, 0xD3, 0x17);
 
-
-DEFINE_GUID(CNFA_GUID, 0x899081C7L, 0x9428, 0x4103, 0x87, 0x93, 0x26, 0x47, 0xE5, 0xEA, 0xA2, 0xB4); // TODO: Remove this and generate it based on the application name instead
-
-// Forward Declarations
-void CloseCNFAWASAPI(void* stateObj);
-int CNFAStateWASAPI(void* object);
-static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initState);
-static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture);
-static void WASAPIPrintDeviceList_Simple();
-static void WASAPIPrintDeviceList(EDataFlow dataFlow);
-void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName,
-                           int reqSampleRate,
-						   int reqChannelsIn, int reqChannelsOut, int sugBufferSize,
-						   const char* inputDevice, const char* outputDevice);
-
-DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2L, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
-DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395L, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
-DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4CL, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
-DEFINE_GUID(IID_IAudioCaptureClient, 0xC8ADBD64L, 0xE71E, 0x48a0, 0xA4, 0xDE, 0x18, 0x5C, 0x39, 0x5C, 0xD3, 0x17);
 
 DEFINE_GUID(CNFA_GUID, 0x899081C7L, 0x9428, 0x4103, 0x87, 0x93, 0x26, 0x47, 0xE5, 0xEA, 0xA2, 0xB4); // TODO: Remove this and generate it based on the application name instead
 
@@ -108,10 +90,23 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	WASAPIState->StreamReady = FALSE;
 
 	HRESULT ErrorCode;
-
 	ErrorCode = CoInitialize(NULL); // TODO: Consider using CoInitializeEx if needed for threading.
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "COM INIT FAILED!"); return WASAPIState; }
 
+	printf("CLSID MMDeviceEnumerator GUID: 0x%08X-0x%04X-0x%04X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X\n",
+		CLSID_MMDeviceEnumerator.Data1, CLSID_MMDeviceEnumerator.Data2, CLSID_MMDeviceEnumerator.Data3,
+		CLSID_MMDeviceEnumerator.Data4[ 0 ], CLSID_MMDeviceEnumerator.Data4[ 1 ],
+    	CLSID_MMDeviceEnumerator.Data4[ 2 ], CLSID_MMDeviceEnumerator.Data4[ 3 ],
+    	CLSID_MMDeviceEnumerator.Data4[ 4 ], CLSID_MMDeviceEnumerator.Data4[ 5 ],
+    	CLSID_MMDeviceEnumerator.Data4[ 6 ], CLSID_MMDeviceEnumerator.Data4[ 7 ]
+	);
+	printf("IID IMMDeviceEnumerator GUID: 0x%08X-0x%04X-0x%04X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X\n",
+		IID_IMMDeviceEnumerator.Data1, IID_IMMDeviceEnumerator.Data2, IID_IMMDeviceEnumerator.Data3,
+		IID_IMMDeviceEnumerator.Data4[ 0 ], IID_IMMDeviceEnumerator.Data4[ 1 ],
+    	IID_IMMDeviceEnumerator.Data4[ 2 ], IID_IMMDeviceEnumerator.Data4[ 3 ],
+    	IID_IMMDeviceEnumerator.Data4[ 4 ], IID_IMMDeviceEnumerator.Data4[ 5 ],
+    	IID_IMMDeviceEnumerator.Data4[ 6 ], IID_IMMDeviceEnumerator.Data4[ 7 ]
+	);
 	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&(WASAPIState->DeviceEnumerator));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device enumerator. "); return WASAPIState; }
 
@@ -215,33 +210,21 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 
 	UINT32 DeviceCount;
 	ErrorCode = Devices->lpVtbl->GetCount(Devices, &DeviceCount);
-	if (FAILED(ErrorCode)) { 
-		WASAPIERROR(ErrorCode, "Failed to get audio endpoint count.");
-		return; 
-	}
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio endpoint count."); return; }
 
 	for (UINT32 DeviceIndex = 0; DeviceIndex < DeviceCount; DeviceIndex++)
 	{
 		IMMDevice* Device;
-		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, &Device);
-		if (FAILED(ErrorCode)) {
-			WASAPIERROR(ErrorCode, "Failed to get audio device.");
-			continue;
-		}
+		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, (void**)&Device);
+		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device."); continue; }
 
 		LPWSTR* DeviceID;
 		ErrorCode = Device->lpVtbl->GetId(Device, &DeviceID);
-		if (FAILED(ErrorCode)) {
-			WASAPIERROR(ErrorCode, "Failed to get audio device ID.");
-			continue;
-		}
+		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); continue; }
 
 		IPropertyStore* Properties;
-		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, &Properties);
-		if (FAILED(ErrorCode)) {
-			WASAPIERROR(ErrorCode, "Failed to get device properties.");
-			continue;
-		}
+		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, (void**)&Properties);
+		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device properties."); continue; }
 		
 		PROPVARIANT Variant;
 		PropVariantInit(&Variant);
@@ -357,4 +340,4 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 }
 
 // This is the equivalent of a static constructor that also calls the base constructor.
-REGISTER_CNFA(WASAPICNFA, 9, "WASAPI", InitCNFAWASAPIDriver);
+REGISTER_CNFA(cnfa_wasapi, 9, "WASAPI", InitCNFAWASAPIDriver);

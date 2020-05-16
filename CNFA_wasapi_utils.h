@@ -35,6 +35,7 @@ enum _AUDCLNT_BUFFERFLAGS
 #define REFIID const IID * __MIDL_CONST
 #endif
 
+#undef DEFINE_GUID
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
         EXTERN_C const GUID DECLSPEC_SELECTANY name \
                 = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
@@ -176,6 +177,11 @@ HRESULT CoCreateInstanceEx(
 {
     return CoCreateInstanceFromApp(Clsid, punkOuter, dwClsCtx, pServerInfo, dwCount, pResults);
 }
+
+EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE 
+CoInitialize(_In_opt_ LPVOID pvReserved);
+EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
+CoUninitialize();
 #endif
 
 // forward declarations
