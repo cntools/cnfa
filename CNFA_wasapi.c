@@ -1,13 +1,19 @@
 #include "CNFA.h"
+
+#ifdef TCC
 #include "CNFA_wasapi_utils.h"
-//#include <InitGuid.h>
-//#include <audioclient.h>
-//#include <mmdeviceapi.h>
+#else
+#include <InitGuid.h>
+#include <audioclient.h>
+#include <mmdeviceapi.h>
+#endif
+
 #include "windows.h"
 #include "os_generic.h"
 
 #define WASAPIPRINT(message) (printf("[WASAPI] %s\n", message))
 #define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%X\n", message, error))
+#define PRINTGUID(guid) (printf("{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
 
 // Forward declarations
 void CloseCNFAWASAPI(void* stateObj);
@@ -93,20 +99,18 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	ErrorCode = CoInitialize(NULL); // TODO: Consider using CoInitializeEx if needed for threading.
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "COM INIT FAILED!"); return WASAPIState; }
 
-	printf("CLSID MMDeviceEnumerator GUID: 0x%08X-0x%04X-0x%04X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X\n",
-		CLSID_MMDeviceEnumerator.Data1, CLSID_MMDeviceEnumerator.Data2, CLSID_MMDeviceEnumerator.Data3,
-		CLSID_MMDeviceEnumerator.Data4[ 0 ], CLSID_MMDeviceEnumerator.Data4[ 1 ],
-    	CLSID_MMDeviceEnumerator.Data4[ 2 ], CLSID_MMDeviceEnumerator.Data4[ 3 ],
-    	CLSID_MMDeviceEnumerator.Data4[ 4 ], CLSID_MMDeviceEnumerator.Data4[ 5 ],
-    	CLSID_MMDeviceEnumerator.Data4[ 6 ], CLSID_MMDeviceEnumerator.Data4[ 7 ]
-	);
-	printf("IID IMMDeviceEnumerator GUID: 0x%08X-0x%04X-0x%04X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X\n",
-		IID_IMMDeviceEnumerator.Data1, IID_IMMDeviceEnumerator.Data2, IID_IMMDeviceEnumerator.Data3,
-		IID_IMMDeviceEnumerator.Data4[ 0 ], IID_IMMDeviceEnumerator.Data4[ 1 ],
-    	IID_IMMDeviceEnumerator.Data4[ 2 ], IID_IMMDeviceEnumerator.Data4[ 3 ],
-    	IID_IMMDeviceEnumerator.Data4[ 4 ], IID_IMMDeviceEnumerator.Data4[ 5 ],
-    	IID_IMMDeviceEnumerator.Data4[ 6 ], IID_IMMDeviceEnumerator.Data4[ 7 ]
-	);
+	#if 1 // Use to make sure GUIDs are correct.
+	printf("[WASAPI] CLSID for MMDeviceEnumerator: ");
+	PRINTGUID(CLSID_MMDeviceEnumerator);
+	printf("\n[WASAPI] IID for IMMDeviceEnumerator: ");
+	PRINTGUID(IID_IMMDeviceEnumerator);
+	printf("\n[WASAPI] IID for IAudioClient: ");
+	PRINTGUID(IID_IAudioClient);
+	printf("\n[WASAPI] IID for IAudioCaptureClient: ");
+	PRINTGUID(IID_IAudioCaptureClient);
+	printf("\n");
+	#endif
+
 	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&(WASAPIState->DeviceEnumerator));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device enumerator. "); return WASAPIState; }
 
