@@ -77,15 +77,20 @@ void CloseCNFAWASAPI(void* stateObj)
 	struct CNFADriverWASAPI* state = (struct CNFADriverWASAPI*)stateObj;
 	if(state != NULL)
 	{
+		// TODO: See if there are any other items that need cleanup.
 		state->KeepGoing = FALSE;
 		if (state->ThreadOut != NULL) { OGJoinThread(state->ThreadOut); }
 		if (state->ThreadIn != NULL) { OGJoinThread(state->ThreadIn); }
 		if (state->EventHandleOut = NULL) { CloseHandle(state->EventHandleOut); }
 		if (state->EventHandleIn = NULL) { CloseHandle(state->EventHandleIn); }
-		// TODO: Cleanup stuff.
+		CoTaskMemFree(state->MixFormat);
+		if (state->CaptureClient != NULL) { state->CaptureClient->lpVtbl->Release(state->CaptureClient); }
+		if (state->Client != NULL) { state->Client->lpVtbl->Release(state->Client); }
+		if (state->Device != NULL) { state->Device->lpVtbl->Release(state->Device); }
+		if (state->DeviceEnumerator != NULL) { state->DeviceEnumerator->lpVtbl->Release(state->DeviceEnumerator); }
 		free(stateObj);
-		// All COM objects.Release()
 		CoUninitialize();
+		printf("[WASAPI] Cleanup completed. Goodbye.");
 	}
 }
 
@@ -253,8 +258,16 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 		if (&Variant != NULL && Variant.pwszVal != NULL) { DeviceFriendlyName = Variant.pwszVal; }
 
 		printf("[WASAPI] [%d]: \"%ls\" = \"%ls\"\n", DeviceIndex, DeviceFriendlyName, DeviceID);
+
+		CoTaskMemFree(DeviceFriendlyName);
+		DeviceFriendlyName = NULL;
+		// TODO: This crashes the program for some reason???
+		//PropVariantClear(&Variant);
+		if (Properties != NULL) { Properties->lpVtbl->Release(Properties); }
+		if (Device != NULL) { Device->lpVtbl->Release(Device); }
 	}
 
+	if (Devices != NULL) { Devices->lpVtbl->Release(Devices); }
 }
 
 // Runs on a thread. Waits for audio data to be ready from the system, then forwards it to the registered callback.
