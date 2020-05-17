@@ -7,6 +7,187 @@
 #define REFPROPERTYKEY const PROPERTYKEY * __MIDL_CONST
 #endif //REFPROPERTYKEY
 
+// Necessary definitions
+#define _ANONYMOUS_STRUCT
+#define BEGIN_INTERFACE
+#define END_INTERFACE
+#define DEVICE_STATE_ACTIVE 0x00000001
+#define AUDCLNT_STREAMFLAGS_CROSSPROCESS             0x00010000
+#define AUDCLNT_STREAMFLAGS_LOOPBACK                 0x00020000
+#define AUDCLNT_STREAMFLAGS_EVENTCALLBACK            0x00040000
+#define AUDCLNT_STREAMFLAGS_NOPERSIST                0x00080000
+#define AUDCLNT_STREAMFLAGS_RATEADJUST               0x00100000
+#define AUDCLNT_STREAMFLAGS_PREVENT_LOOPBACK_CAPTURE 0x01000000
+#define AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY      0x08000000
+#define AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM           0x80000000
+#define AUDCLNT_SESSIONFLAGS_EXPIREWHENUNOWNED       0x10000000
+#define AUDCLNT_SESSIONFLAGS_DISPLAY_HIDE            0x20000000
+#define AUDCLNT_SESSIONFLAGS_DISPLAY_HIDEWHENEXPIRED 0x40000000
+enum _AUDCLNT_BUFFERFLAGS
+{
+    AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY	= 0x1,
+    AUDCLNT_BUFFERFLAGS_SILENT	= 0x2,
+    AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR	= 0x4
+} ;
+#define PropVariantInit(pvar) memset ( (pvar), 0, sizeof(PROPVARIANT) )
+
+#ifndef REFIID 
+#define REFIID const IID * __MIDL_CONST
+#endif
+
+#undef DEFINE_GUID
+#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+        EXTERN_C const GUID DECLSPEC_SELECTANY name \
+                = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+
+#if defined (__TINYC__)
+#define _COM_Outptr_
+#define _In_
+#define _Out_
+#define _Outptr_
+#define _In_opt_
+#define _Out_opt_
+#define __RPC__in
+#define __RPC__out
+#define interface struct
+#define CONST_VTBL
+#define _Outptr_result_buffer_(X)
+#define _Inexpressible_(X)
+#define REFPROPVARIANT const PROPVARIANT * __MIDL_CONST
+typedef struct tagPROPVARIANT PROPVARIANT;
+typedef struct _tagpropertykey PROPERTYKEY;
+typedef IID GUID;
+typedef struct tWAVEFORMATEX WAVEFORMATEX;
+#endif
+
+#if defined(__TINYC__)
+#define CLSCTX_INPROC_SERVER 0x1
+#define CLSCTX_INPROC_HANDLER 0x2
+#define CLSCTX_LOCAL_SERVER	0x4
+#define CLSCTX_REMOTE_SERVER 0x10
+#define STGM_READ 0x00000000L
+#define CLSCTX_ALL  (CLSCTX_INPROC_SERVER| \
+                    CLSCTX_INPROC_HANDLER| \
+                    CLSCTX_LOCAL_SERVER| \
+                    CLSCTX_REMOTE_SERVER)
+typedef unsigned short VARTYPE;
+typedef BYTE PROPVAR_PAD1;
+typedef BYTE PROPVAR_PAD2;
+typedef ULONG PROPVAR_PAD3;
+
+typedef struct tagDEC {
+    USHORT wReserved;
+    BYTE scale;
+    BYTE sign;
+    ULONG Hi32;
+    ULONGLONG Lo64;
+} 	DECIMAL;
+struct tagPROPVARIANT {
+  union {
+    struct tag_inner_PROPVARIANT
+        {
+        VARTYPE vt;
+        PROPVAR_PAD1 wReserved1;
+        PROPVAR_PAD2 wReserved2;
+        PROPVAR_PAD3 wReserved3;
+        union 
+            {
+                double filler;
+            } 	;
+        } ;
+        DECIMAL decVal;
+    };
+};
+
+#define _Inout_updates_(dwCount)
+#define FAR
+#define WINOLEAPI
+typedef interface IUnknown IUnknown;
+typedef  IUnknown *LPUNKNOWN;
+typedef struct tagMULTI_QI
+{
+    const IID *pIID;
+    IUnknown *pItf;
+    HRESULT hr;
+} 	MULTI_QI;
+
+typedef struct _COAUTHIDENTITY
+{
+    /* [size_is] */ USHORT *User;
+    /* [range] */ ULONG UserLength;
+    /* [size_is] */ USHORT *Domain;
+    /* [range] */ ULONG DomainLength;
+    /* [size_is] */ USHORT *Password;
+    /* [range] */ ULONG PasswordLength;
+    ULONG Flags;
+} 	COAUTHIDENTITY;
+
+typedef struct _COAUTHINFO
+{
+    DWORD dwAuthnSvc;
+    DWORD dwAuthzSvc;
+    LPWSTR pwszServerPrincName;
+    DWORD dwAuthnLevel;
+    DWORD dwImpersonationLevel;
+    COAUTHIDENTITY *pAuthIdentityData;
+    DWORD dwCapabilities;
+} 	COAUTHINFO;
+
+typedef struct _COSERVERINFO
+{
+    DWORD dwReserved1;
+    LPWSTR pwszName;
+    COAUTHINFO *pAuthInfo;
+    DWORD dwReserved2;
+} 	COSERVERINFO;
+
+EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
+CoCreateInstanceFromApp(
+    _In_ REFCLSID Clsid,
+    _In_opt_ IUnknown* punkOuter,
+    _In_ DWORD dwClsCtx,
+    _In_opt_ PVOID reserved,
+    _In_ DWORD dwCount,
+    _Inout_updates_(dwCount) MULTI_QI* pResults
+);
+
+HRESULT CoCreateInstance(
+    _In_     REFCLSID rclsid,
+    _In_opt_ LPUNKNOWN pUnkOuter,
+    _In_     DWORD dwClsContext,
+    _In_     REFIID riid,
+    _COM_Outptr_ LPVOID FAR* ppv);
+
+HRESULT CoCreateInstanceEx(
+    _In_ REFCLSID                      Clsid,
+    _In_opt_ IUnknown     *            punkOuter,
+    _In_ DWORD                         dwClsCtx,
+    _In_opt_ COSERVERINFO *            pServerInfo,
+    _In_ DWORD                         dwCount,
+    _Inout_updates_(dwCount) MULTI_QI *pResults );
+
+EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE 
+CoInitialize(_In_opt_ LPVOID pvReserved);
+EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
+CoUninitialize();
+#endif
+
+// forward declarations
+typedef struct IMMDevice IMMDevice;
+typedef struct IMMDeviceCollection IMMDeviceCollection;
+typedef struct IMMDeviceEnumerator IMMDeviceEnumerator;
+typedef struct IMMNotificationClient IMMNotificationClient;
+typedef struct IPropertyStore IPropertyStore;
+typedef struct IAudioClient IAudioClient;
+typedef struct IAudioCaptureClient IAudioCaptureClient;
+
+// So the linker doesn't complain
+extern const IID CLSID_MMDeviceEnumerator;
+extern const IID IID_IMMDeviceEnumerator;
+extern const IID IID_IAudioClient;
+extern const IID CNFA_GUID;
+extern const IID IID_IAudioCaptureClient;
+
 typedef enum __MIDL___MIDL_itf_mmdeviceapi_0000_0000_0001
 {
     eRender	= 0,

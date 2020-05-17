@@ -1,8 +1,8 @@
 #include "CNFA.h"
-//#include "CNFA_wasapi_utils.h"
-#include <InitGuid.h>
-#include <audioclient.h>
-#include <mmdeviceapi.h>
+#include "CNFA_wasapi_utils.h"
+//#include <InitGuid.h>
+//#include <audioclient.h>
+//#include <mmdeviceapi.h>
 #include "windows.h"
 #include "os_generic.h"
 
@@ -93,6 +93,20 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	ErrorCode = CoInitialize(NULL); // TODO: Consider using CoInitializeEx if needed for threading.
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "COM INIT FAILED!"); return WASAPIState; }
 
+	printf("CLSID MMDeviceEnumerator GUID: 0x%08X-0x%04X-0x%04X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X\n",
+		CLSID_MMDeviceEnumerator.Data1, CLSID_MMDeviceEnumerator.Data2, CLSID_MMDeviceEnumerator.Data3,
+		CLSID_MMDeviceEnumerator.Data4[ 0 ], CLSID_MMDeviceEnumerator.Data4[ 1 ],
+    	CLSID_MMDeviceEnumerator.Data4[ 2 ], CLSID_MMDeviceEnumerator.Data4[ 3 ],
+    	CLSID_MMDeviceEnumerator.Data4[ 4 ], CLSID_MMDeviceEnumerator.Data4[ 5 ],
+    	CLSID_MMDeviceEnumerator.Data4[ 6 ], CLSID_MMDeviceEnumerator.Data4[ 7 ]
+	);
+	printf("IID IMMDeviceEnumerator GUID: 0x%08X-0x%04X-0x%04X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X-0x%02X\n",
+		IID_IMMDeviceEnumerator.Data1, IID_IMMDeviceEnumerator.Data2, IID_IMMDeviceEnumerator.Data3,
+		IID_IMMDeviceEnumerator.Data4[ 0 ], IID_IMMDeviceEnumerator.Data4[ 1 ],
+    	IID_IMMDeviceEnumerator.Data4[ 2 ], IID_IMMDeviceEnumerator.Data4[ 3 ],
+    	IID_IMMDeviceEnumerator.Data4[ 4 ], IID_IMMDeviceEnumerator.Data4[ 5 ],
+    	IID_IMMDeviceEnumerator.Data4[ 6 ], IID_IMMDeviceEnumerator.Data4[ 7 ]
+	);
 	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&(WASAPIState->DeviceEnumerator));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device enumerator. "); return WASAPIState; }
 
@@ -328,4 +342,4 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 }
 
 // This is the equivalent of a static constructor that also calls the base constructor.
-REGISTER_CNFA(WASAPICNFA, 9, "WASAPI", InitCNFAWASAPIDriver);
+REGISTER_CNFA(cnfa_wasapi, 9, "WASAPI", InitCNFAWASAPIDriver);

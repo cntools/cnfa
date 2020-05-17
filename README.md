@@ -14,5 +14,5 @@ int CNFAState( struct CNFADriver * cnfaobject ); //returns bitmask.  1 if mic re
 void CNFAClose( struct CNFADriver * cnfaobject );
 ```
 
-This repo does not contain any tests or building, as this is intended as a library-only.  For any use, please see colorchord: https://github.com/cnlohr/colohrchord
+This repo does not contain any tests or building, as this is intended as a library-only.  For any use, please see colorchord: https://github.com/cnlohr/colorchord
 
