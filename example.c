@@ -17,14 +17,15 @@ void Callback( struct CNFADriver * sd, short * in, short * out, int framesr, int
 	totalframesr += framesr;
 	totalframesp += framesp;
 
-//	if( framesr ) printf( "Read sample: %d\n", in[0] );
-
 	int channels = sd->channelsPlay;
 	for( i = 0; i < framesp; i++ )
 	{
+		// Shift phase, so we run at 440 Hz (A4)
 		omega += ( 3.14159 * 2 * 440. ) / sd->sps;
-		int value = sin( omega ) * 0.1 * 32767;
-//		printf( "%d\n", value );
+
+		// Make the 440 Hz tone at 10% volume and convert to short. 
+		short value = sin( omega ) * 0.1 * 32767;
+
 		int c;
 		for( c = 0; c < channels; c++ )
 		{
