@@ -259,7 +259,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device friendly name."); }
 
 		LPWSTR DeviceFriendlyName = L"[Name Retrieval Failed]";
-		if (&Variant != NULL && Variant.pwszVal != NULL) { DeviceFriendlyName = Variant.pwszVal; }
+		if (Variant.pwszVal != NULL) { DeviceFriendlyName = Variant.pwszVal; }
 
 		printf("[WASAPI] [%d]: \"%ls\" = \"%ls\"\n", DeviceIndex, DeviceFriendlyName, DeviceID);
 
@@ -311,7 +311,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			// TODO THIS SECTION NEEDS CLEANUP AND HANDLING OF OTHER DATATYPES!!!
 			UINT32 Size = FramesAvailable * state->BytesPerFrame; // Size in bytes
 			FLOAT* DataAsFloat = (FLOAT*)DataBuffer;
-			UINT16* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2);
+			SHORT* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2);
 			for (INT32 i = 0; i < Size / 4; i++) { AudioData[i] = (SHORT)(DataAsFloat[i] * 32767.5F); }
 
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
