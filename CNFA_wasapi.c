@@ -1,6 +1,10 @@
 #include "CNFA.h"
 
 #ifdef TCC
+#define NO_WIN_HEADERS
+#endif
+
+#ifdef  NO_WIN_HEADERS
 #include "CNFA_wasapi_utils.h"
 #else
 #include <InitGuid.h>

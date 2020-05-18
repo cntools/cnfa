@@ -35,10 +35,16 @@ enum _AUDCLNT_BUFFERFLAGS
 #define REFIID const IID * __MIDL_CONST
 #endif
 
+#ifdef NO_WIN_HEADERS
 #undef DEFINE_GUID
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
         EXTERN_C const GUID DECLSPEC_SELECTANY name \
                 = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#undef DEFINE_PROPERTYKEY
+#define DEFINE_PROPERTYKEY(name,l,w1,w2,b1,b2,b3,b4,b5,b6,b7,b8,pid) \
+        EXTERN_C const PROPERTYKEY DECLSPEC_SELECTANY name \
+            = { { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }, pid }
+#endif //NO_WIN_HEADERS
 
 #if defined (__TINYC__)
 #define _COM_Outptr_
@@ -55,12 +61,9 @@ enum _AUDCLNT_BUFFERFLAGS
 #define _Inexpressible_(X)
 #define REFPROPVARIANT const PROPVARIANT * __MIDL_CONST
 typedef struct tagPROPVARIANT PROPVARIANT;
-typedef struct _tagpropertykey PROPERTYKEY;
 typedef IID GUID;
 typedef struct tWAVEFORMATEX WAVEFORMATEX;
-#endif
 
-#if defined(__TINYC__)
 #define CLSCTX_INPROC_SERVER 0x1
 #define CLSCTX_INPROC_HANDLER 0x2
 #define CLSCTX_LOCAL_SERVER	0x4
@@ -71,9 +74,12 @@ typedef struct tWAVEFORMATEX WAVEFORMATEX;
                     CLSCTX_LOCAL_SERVER| \
                     CLSCTX_REMOTE_SERVER)
 typedef unsigned short VARTYPE;
-typedef BYTE PROPVAR_PAD1;
-typedef BYTE PROPVAR_PAD2;
-typedef ULONG PROPVAR_PAD3;
+
+typedef struct _tagpropertykey
+{
+GUID fmtid;
+DWORD pid;
+} 	PROPERTYKEY;
 
 typedef struct tagDEC {
     USHORT wReserved;
@@ -82,6 +88,11 @@ typedef struct tagDEC {
     ULONG Hi32;
     ULONGLONG Lo64;
 } 	DECIMAL;
+
+// Property varient struct, used for getting the device name info
+typedef BYTE PROPVAR_PAD1;
+typedef BYTE PROPVAR_PAD2;
+typedef ULONG PROPVAR_PAD3;
 struct tagPROPVARIANT {
   union {
     struct tag_inner_PROPVARIANT
@@ -92,8 +103,9 @@ struct tagPROPVARIANT {
         PROPVAR_PAD3 wReserved3;
         union 
             {
-                double filler;
-            } 	;
+                double dblVal;   // Filler for the largest object we need to store
+                LPWSTR pwszVal;  // This is the only parameter we actually use
+            };
         } ;
         DECIMAL decVal;
     };
@@ -170,6 +182,10 @@ EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
 CoInitialize(_In_opt_ LPVOID pvReserved);
 EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
 CoUninitialize();
+
+
+// stuff to be able to read device names
+DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14);
 #endif
 
 // forward declarations
