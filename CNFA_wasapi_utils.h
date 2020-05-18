@@ -44,6 +44,9 @@ enum _AUDCLNT_BUFFERFLAGS
 #define DEFINE_PROPERTYKEY(name,l,w1,w2,b1,b2,b3,b4,b5,b6,b7,b8,pid) \
         EXTERN_C const PROPERTYKEY DECLSPEC_SELECTANY name \
             = { { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }, pid }
+
+// stuff to be able to read device names
+DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14);
 #endif //NO_WIN_HEADERS
 
 #if defined (__TINYC__)
@@ -184,8 +187,6 @@ EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
 CoUninitialize();
 
 
-// stuff to be able to read device names
-DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14);
 #endif
 
 // forward declarations
