@@ -107,13 +107,13 @@ static void stream_record_cb(pa_stream *s, size_t length, void *userdata)
 
 	uint16_t * bufr;
 
-    if (pa_stream_peek(r->rec, (void*)&bufr, &length) < 0) {
+    if (pa_stream_peek(r->rec, (const void**)&bufr, &length) < 0) {
         fprintf(stderr, ("pa_stream_peek() failed: %s\n"), pa_strerror(pa_context_errno(r->pa_ctx)));
         return;
     }
 
 	short * buffer;
-    buffer = pa_xmalloc(length);
+    buffer = (short*)pa_xmalloc(length);
     memcpy(buffer, bufr, length);
 	pa_stream_drop(r->rec);
 	r->callback( (struct CNFADriver*)r, buffer, 0, length/(sizeof(short)*r->channelsRec), 0 );
@@ -129,7 +129,7 @@ static void stream_underflow_cb(pa_stream *s, void *userdata) {
 
 void pa_state_cb(pa_context *c, void *userdata) {
 	pa_context_state_t state;
-	int *pa_ready = userdata;
+	int *pa_ready = (int*)userdata;
 	state = pa_context_get_state(c);
 	switch  (state) {
 		// These are just here for reference
@@ -156,13 +156,13 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 	static pa_sample_spec ss;
 	int error;
 	pa_mainloop_api *pa_mlapi;
-	struct CNFADriverPulse * r = malloc( sizeof( struct CNFADriverPulse ) );
+	struct CNFADriverPulse * r = (struct CNFADriverPulse *)malloc( sizeof( struct CNFADriverPulse ) );
 
 	r->pa_ml = pa_mainloop_new();
 	pa_mlapi = pa_mainloop_get_api(r->pa_ml);
 	const char * title = your_name;
 	r->pa_ctx = pa_context_new(pa_mlapi, title );
-	pa_context_connect(r->pa_ctx, NULL, 0, NULL);
+	pa_context_connect(r->pa_ctx, NULL, PA_CONTEXT_NOFLAGS, NULL);
 
 	//TODO: pa_context_set_state_callback
 
@@ -219,7 +219,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 				                    // PA_STREAM_INTERPOLATE_TIMING
 				                    // |PA_STREAM_ADJUST_LATENCY //Some servers don't like the adjust_latency flag.
 				                    // |PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL);
-					0, NULL, NULL );
+					PA_STREAM_NOFLAGS, NULL, NULL );
 		if( ret < 0 )
 		{
 			fprintf(stderr, __FILE__": (PLAY) pa_stream_connect_playback() failed: %s\n", pa_strerror(ret));
@@ -245,11 +245,11 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 		bufattr.minreq = bufbytes;
 		bufattr.prebuf = (uint32_t)-1;
 		bufattr.tlength = bufbytes*3;
-		int ret = pa_stream_connect_record(r->rec, r->sourceNamePlay, &bufattr, 0
-//							       |PA_STREAM_INTERPOLATE_TIMING
-			                       |PA_STREAM_ADJUST_LATENCY  //Some servers don't like the adjust_latency flag.
-//		                     	|PA_STREAM_AUTO_TIMING_UPDATE
-//				0 
+		int ret = pa_stream_connect_record(r->rec, r->sourceNamePlay, &bufattr, 
+//							       PA_STREAM_INTERPOLATE_TIMING
+			                       PA_STREAM_ADJUST_LATENCY  //Some servers don't like the adjust_latency flag.
+//		                     	PA_STREAM_AUTO_TIMING_UPDATE
+//								PA_STREAM_NOFLAGS
 				);
 
 		if( ret < 0 )

@@ -28,7 +28,7 @@ int CNFAStateNull( void * object )
 
 void * InitCNFANull( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
-	struct CNFADriverNull * r = malloc( sizeof( struct CNFADriverNull ) );
+	struct CNFADriverNull * r = (struct CNFADriverNull *)malloc( sizeof( struct CNFADriverNull ) );
 	r->CloseFn = CloseCNFANull;
 	r->StateFn = CNFAStateNull;
 	r->callback = cb;

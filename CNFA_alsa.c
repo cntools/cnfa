@@ -56,6 +56,8 @@ void CloseCNFAAlsa( void * v )
 static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, snd_pcm_uframes_t * bufsize, struct CNFADriverAlsa * a )
 {
 	int err;
+	int bufs;
+	int dir;
 	snd_pcm_hw_params_t *hw_params;
 	if ((err = snd_pcm_hw_params_malloc (&hw_params)) < 0) {
 		fprintf (stderr, "cannot allocate hardware parameter structure (%s)\n",
@@ -93,7 +95,7 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 		goto fail;
 	}
 
-	int dir = 0;
+	dir = 0;
 	if( (err = snd_pcm_hw_params_set_period_size_near(handle, hw_params, bufsize, &dir)) < 0 )
 	{
 		fprintf( stderr, "cannot set period size. (%s)\n",
@@ -102,7 +104,7 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 	}
 
 	//NOTE: This step is critical for low-latency sound.
-	int bufs = *bufsize*3;
+	bufs = *bufsize*3;
 	if( (err = snd_pcm_hw_params_set_buffer_size(handle, hw_params, bufs)) < 0 )
 	{
 		fprintf( stderr, "cannot set snd_pcm_hw_params_set_buffer_size size. (%s)\n",
@@ -346,7 +348,7 @@ fail:
 
 void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
-	struct CNFADriverAlsa * r = malloc( sizeof( struct CNFADriverAlsa ) );
+	struct CNFADriverAlsa * r = (struct CNFADriverAlsa *)malloc( sizeof( struct CNFADriverAlsa ) );
 
 	r->CloseFn = CloseCNFAAlsa;
 	r->StateFn = CNFAStateAlsa;
