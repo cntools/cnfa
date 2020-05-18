@@ -12,9 +12,9 @@
 #include <mmdeviceapi.h> // Audio device handling
 #include <Functiondiscoverykeys_devpkey.h> // Property keys for audio devices
 #include <avrt.h> // Thread management
+#include "windows.h"
 #endif
 
-#include "windows.h"
 #include "os_generic.h"
 
 #define WASAPIPRINT(message) (printf("[WASAPI] %s\n", message))
