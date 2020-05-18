@@ -85,8 +85,8 @@ void CloseCNFAWASAPI(void* stateObj)
 		state->KeepGoing = FALSE;
 		if (state->ThreadOut != NULL) { OGJoinThread(state->ThreadOut); }
 		if (state->ThreadIn != NULL) { OGJoinThread(state->ThreadIn); }
-		if (state->EventHandleOut = NULL) { CloseHandle(state->EventHandleOut); }
-		if (state->EventHandleIn = NULL) { CloseHandle(state->EventHandleIn); }
+		if (state->EventHandleOut != NULL) { CloseHandle(state->EventHandleOut); }
+		if (state->EventHandleIn != NULL) { CloseHandle(state->EventHandleIn); }
 		CoTaskMemFree(state->MixFormat);
 		if (state->CaptureClient != NULL) { state->CaptureClient->lpVtbl->Release(state->CaptureClient); }
 		if (state->Client != NULL) { state->Client->lpVtbl->Release(state->Client); }
@@ -138,7 +138,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	WASAPIState->Device = WASAPIGetDefaultDevice(FALSE);
 
-	LPWSTR* DeviceID;
+	LPWSTR DeviceID;
 	ErrorCode = WASAPIState->Device->lpVtbl->GetId(WASAPIState->Device, &DeviceID);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return WASAPIState;; }
 	else { printf("[WASAPI] Using device ID \"%ls\".\n", DeviceID); }
@@ -166,7 +166,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	
 	WASAPIState->BytesPerFrame = WASAPIState->MixFormat->nChannels * (WASAPIState->MixFormat->wBitsPerSample / 8);
 
-	REFERENCE_TIME* DefaultInterval, MinimumInterval;
+	REFERENCE_TIME DefaultInterval, MinimumInterval;
 	ErrorCode = WASAPIState->Client->lpVtbl->GetDevicePeriod(WASAPIState->Client, &DefaultInterval, &MinimumInterval);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device timing info. "); return WASAPIState; }
 	printf("[WASAPI] Default transaction period is %d ticks, minimum is %d ticks.\n", DefaultInterval, MinimumInterval);
@@ -244,7 +244,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, (void**)&Device);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device."); continue; }
 
-		LPWSTR* DeviceID;
+		LPWSTR DeviceID;
 		ErrorCode = Device->lpVtbl->GetId(Device, &DeviceID);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); continue; }
 
