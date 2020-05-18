@@ -151,7 +151,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	ErrorCode = WASAPIState->Device->lpVtbl->Activate(WASAPIState->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(WASAPIState->Client));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio client. "); return WASAPIState; }
 
-	ErrorCode = WASAPIState->Client->lpVtbl->GetMixFormat(WASAPIState->Client, (void**)&(WASAPIState->MixFormat));
+	ErrorCode = WASAPIState->Client->lpVtbl->GetMixFormat(WASAPIState->Client, &WASAPIState->MixFormat);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get mix format. "); return WASAPIState; }
 	printf("[WASAPI] Mix format is %d channel, %luHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
 	printf("[WASAPI] Mix format is format %d, %dB block-aligned, with %dB of extra data in this definition.\n", WASAPIState->MixFormat->wFormatTag, WASAPIState->MixFormat->nBlockAlign, WASAPIState->MixFormat->cbSize);
@@ -210,7 +210,7 @@ static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture)
 {
 	HRESULT ErrorCode;
 	IMMDevice* Device;
-	ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDefaultAudioEndpoint(WASAPIState->DeviceEnumerator, isCapture ? eCapture : eRender, eMultimedia, (void**)&Device);
+	ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDefaultAudioEndpoint(WASAPIState->DeviceEnumerator, isCapture ? eCapture : eRender, eMultimedia, &Device);
 	if (FAILED(ErrorCode))
 	{
 		WASAPIERROR(ErrorCode, "Failed to get default device.");
@@ -231,7 +231,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 {
 	printf("[WASAPI] %s Devices:\n", (dataFlow == eCapture ? "Capture" : "Render"));
 	IMMDeviceCollection* Devices;
-	HRESULT ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->EnumAudioEndpoints(WASAPIState->DeviceEnumerator, dataFlow, DEVICE_STATE_ACTIVE, (void**)&Devices);
+	HRESULT ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->EnumAudioEndpoints(WASAPIState->DeviceEnumerator, dataFlow, DEVICE_STATE_ACTIVE, &Devices);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio endpoints."); return; }
 
 	UINT32 DeviceCount;
@@ -241,7 +241,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 	for (UINT32 DeviceIndex = 0; DeviceIndex < DeviceCount; DeviceIndex++)
 	{
 		IMMDevice* Device;
-		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, (void**)&Device);
+		ErrorCode = Devices->lpVtbl->Item(Devices, DeviceIndex, &Device);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device."); continue; }
 
 		LPWSTR DeviceID;
@@ -249,7 +249,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); continue; }
 
 		IPropertyStore* Properties;
-		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, (void**)&Properties);
+		ErrorCode = Device->lpVtbl->OpenPropertyStore(Device, STGM_READ, &Properties);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device properties."); continue; }
 		
 		PROPVARIANT Variant;
