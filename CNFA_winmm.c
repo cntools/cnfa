@@ -106,7 +106,7 @@ void CALLBACK HANDLEMIC(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwpa
 
 	case MM_WIM_DATA:
 		ob = (w->GOBUFFRec+(BUFFS))%BUFFS;
-		w->callback( (struct CNFADriver*)w, (short*)(w->WavBuffIn[w->GOBUFFRec]).lpData, 0, w->buffer, 0 );
+		w->callback( (struct CNFADriver*)w, (short*)(w->WavBuffIn[w->GOBUFFRec]).lpData, 0, w->buffer/(2*w->channelsRec), 0 );
 		waveInAddBuffer(w->hMyWaveIn,&(w->WavBuffIn[w->GOBUFFRec]),sizeof(WAVEHDR));
 		w->GOBUFFRec = ( w->GOBUFFRec + 1 ) % BUFFS;
 		break;
@@ -130,7 +130,7 @@ void CALLBACK HANDLESINK(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwp
 		break;
 
 	case MM_WOM_DONE:
-		w->callback( (struct CNFADriver*)w, 0, (short*)(w->WavBuffOut[w->GOBUFFPlay]).lpData, 0, w->buffer );
+		w->callback( (struct CNFADriver*)w, 0, (short*)(w->WavBuffOut[w->GOBUFFPlay]).lpData, 0, w->buffer/(2*w->channelsPlay) );
 		waveOutWrite( w->hMyWaveOut, &(w->WavBuffOut[w->GOBUFFPlay]),sizeof(WAVEHDR) );
 		w->GOBUFFPlay = ( w->GOBUFFPlay + 1 ) % BUFFS;
 		break;
@@ -216,13 +216,14 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 
 
 
-void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
+void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
 	struct CNFADriverWin * r = (struct CNFADriverWin *)malloc( sizeof( struct CNFADriverWin ) );
-
+	memset( r, 0, sizeof(*r) );
 	r->CloseFn = CloseCNFAWin;
 	r->StateFn = CNFAStateWin;
 	r->callback = cb;
+	r->opaque = opaque;
 	r->sps = reqSPS;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
@@ -233,7 +234,6 @@ void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPS, int reqCh
 	r->recording = 0;
 	r->playing = 0;
 	r->isEnding = 0;
-
 	r->GOBUFFPlay = 0;
 	r->GOBUFFRec = 0;
 
