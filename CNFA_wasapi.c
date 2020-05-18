@@ -18,8 +18,8 @@
 #include "os_generic.h"
 
 #define WASAPIPRINT(message) (printf("[WASAPI] %s\n", message))
-#define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%X\n", message, error))
-#define PRINTGUID(guid) (printf("{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
+#define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%lX\n", message, error))
+#define PRINTGUID(guid) (printf("{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
 
 #define WASAPI_EXTRA_DEBUG FALSE
 
@@ -153,7 +153,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	ErrorCode = WASAPIState->Client->lpVtbl->GetMixFormat(WASAPIState->Client, (void**)&(WASAPIState->MixFormat));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get mix format. "); return WASAPIState; }
-	printf("[WASAPI] Mix format is %d channel, %dHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
+	printf("[WASAPI] Mix format is %d channel, %luHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
 	printf("[WASAPI] Mix format is format %d, %dB block-aligned, with %dB of extra data in this definition.\n", WASAPIState->MixFormat->wFormatTag, WASAPIState->MixFormat->nBlockAlign, WASAPIState->MixFormat->cbSize);
 
 	// We'll request PCM, 16bbs data from the system. It should be able to do this conversion for us, as long as we are not in exclusive mode.
@@ -169,7 +169,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	REFERENCE_TIME DefaultInterval, MinimumInterval;
 	ErrorCode = WASAPIState->Client->lpVtbl->GetDevicePeriod(WASAPIState->Client, &DefaultInterval, &MinimumInterval);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device timing info. "); return WASAPIState; }
-	printf("[WASAPI] Default transaction period is %d ticks, minimum is %d ticks.\n", DefaultInterval, MinimumInterval);
+	printf("[WASAPI] Default transaction period is %lld ticks, minimum is %lld ticks.\n", DefaultInterval, MinimumInterval);
 
 	WASAPIState->SampleRate = WASAPIState->MixFormat->nSamplesPerSec;
 
@@ -318,7 +318,9 @@ void* ProcessEventAudioIn(void* stateObj)
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 			else { Released = TRUE; }
 
-			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] Got %d bytes of audio data in %d frames. Fowarding to %d.\n", Size, FramesAvailable, WASAPIState->Callback); }
+			if (WASAPI_EXTRA_DEBUG) {
+				printf("[WASAPI] Got %d bytes of audio data in %d frames. Fowarding to %p.\n", Size, FramesAvailable, (void*) WASAPIState->Callback); 
+			}
 
 			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, (FramesAvailable * state->MixFormat->nChannels) / 2, 0);
 			free(AudioData);
