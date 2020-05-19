@@ -21,13 +21,13 @@
 #define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%lX\n", message, error))
 #define PRINTGUID(guid) (printf("{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
 
-#define WASAPI_EXTRA_DEBUG FALSE
+#define WASAPI_EXTRA_DEBUG TRUE
 
 // Forward declarations
 void CloseCNFAWASAPI(void* stateObj);
 int CNFAStateWASAPI(void* object);
 static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initState);
-static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture);
+static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture, BOOL isMultimedia);
 static void WASAPIPrintAllDeviceLists();
 static void WASAPIPrintDeviceList(EDataFlow dataFlow);
 void* ProcessEventAudioIn(void* stateObj);
@@ -78,6 +78,7 @@ struct CNFADriverWASAPI
 // This is where the driver's current state is stored.
 static struct CNFADriverWASAPI* WASAPIState;
 
+// Stops streams, ends threads, and cleans up all resources used by the driver.
 void CloseCNFAWASAPI(void* stateObj)
 {
 	struct CNFADriverWASAPI* state = (struct CNFADriverWASAPI*)stateObj;
@@ -100,16 +101,22 @@ void CloseCNFAWASAPI(void* stateObj)
 	}
 }
 
+// Gets the current state of the driver.
+// 0 = No streams active
+// 1 = Input stream active
+// 2 = Output stream active
+// 3 = Both streams active
 int CNFAStateWASAPI(void* stateObj)
 {
 	struct CNFADriverWASAPI* state = (struct CNFADriverWASAPI*)stateObj;
 	if(state != NULL)
 	{
-		if (state->StreamReady) { return 1; }
+		if (state->StreamReady) { return 1; } // TODO: Output the correct status when output is implemented.
 	}
 	return 0;
 }
 
+// Reads the desired configuration, interfaces with WASAPI to get the current system information, and starts the input stream.
 static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initState)
 {
 	WASAPIState = initState;
@@ -130,6 +137,8 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		PRINTGUID(IID_IAudioClient);
 		printf("\n[WASAPI] IID for IAudioCaptureClient: ");
 		PRINTGUID(IID_IAudioCaptureClient);
+		printf("\n[WASAPI] IID for IMMEndpoint: ");
+		PRINTGUID(IID_IMMEndpoint);
 		printf("\n");
 	}
 
@@ -138,33 +147,35 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	WASAPIPrintAllDeviceLists();
 
+	// We need to find the appropriate device to use.
 	BYTE DeviceDirection = 2; // 0 = Render, 1 = Capture, 2 = Unknown
 
-	// TODO: Get info from Charles as to what the standard values for "use this kind of default device" should be.
 	if (WASAPIState->InputDeviceID == NULL || strcmp(WASAPIState->InputDeviceID, "defaultRender") == 0)
 	{
 		WASAPIPRINT("Attempting to use system default render device as input.");
-		WASAPIState->Device = WASAPIGetDefaultDevice(FALSE);
+		WASAPIState->Device = WASAPIGetDefaultDevice(FALSE, TRUE);
 		DeviceDirection = 0;
 	}
-	else if (strcmp(WASAPIState->InputDeviceID, "defaultCapture") == 0)
+	else if (strncmp("defaultCapture", WASAPIState->InputDeviceID, strlen("defaultCapture")) == 0)
 	{
-		WASAPIPRINT("Attempting to use system default capture device as input.");
-		WASAPIState->Device = WASAPIGetDefaultDevice(TRUE);
+		BOOL IsMultimedia = TRUE;
+		if (strstr(WASAPIState->InputDeviceID, "Comm") != NULL) { IsMultimedia = FALSE; }
+		printf("[WASAPI] Attempting to use system default %s capture device as input.\n", (IsMultimedia ? "multimedia" : "communications"));
+		WASAPIState->Device = WASAPIGetDefaultDevice(TRUE, IsMultimedia);
 		DeviceDirection = 1;
 	}
 	else // A specific device was selected by ID.
 	{
 		LPWSTR DeviceIDasLPWSTR;
-		DeviceIDasLPWSTR = malloc(strlen(WASAPIState->InputDeviceID) * sizeof(WCHAR));
-		mbstowcs(DeviceIDasLPWSTR, WASAPIState->InputDeviceID, strlen(WASAPIState->InputDeviceID));
+		DeviceIDasLPWSTR = malloc((strlen(WASAPIState->InputDeviceID) + 1) * sizeof(WCHAR));
+		mbstowcs(DeviceIDasLPWSTR, WASAPIState->InputDeviceID, strlen(WASAPIState->InputDeviceID) + 1);
 		printf("[WASAPI] Attempting to find specified device \"%ls\".\n", DeviceIDasLPWSTR);
 
 		ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDevice(WASAPIState->DeviceEnumerator, DeviceIDasLPWSTR, &(WASAPIState->Device));
 		if (FAILED(ErrorCode))
 		{
 			WASAPIERROR(ErrorCode, "Failed to get audio device from the given ID. Using default render device instead.");
-			WASAPIState->Device = WASAPIGetDefaultDevice(FALSE);
+			WASAPIState->Device = WASAPIGetDefaultDevice(FALSE, TRUE);
 			DeviceDirection = 0;
 		}
 		else
@@ -195,6 +206,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		if (Endpoint != NULL) { Endpoint->lpVtbl->Release(Endpoint); }
 	}
 
+	// We should have a device now.
 	char* DeviceDirectionDesc = (DeviceDirection == 0) ? "render" : ((DeviceDirection == 1) ? "capture" : "UNKNOWN");
 
 	LPWSTR DeviceID;
@@ -202,6 +214,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return WASAPIState; }
 	else { printf("[WASAPI] Using device ID \"%ls\", which is a %s device.\n", DeviceID, DeviceDirectionDesc); }
 
+	// Start an audio client and get info about the stream format.
 	ErrorCode = WASAPIState->Device->lpVtbl->Activate(WASAPIState->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(WASAPIState->Client));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio client. "); return WASAPIState; }
 
@@ -217,8 +230,9 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	//WASAPIState->MixFormat->wBitsPerSample = 16 * WASAPIState->MixFormat->nChannels;
 	//WASAPIState->MixFormat->nBlockAlign = 2 * WASAPIState->MixFormat->nChannels;
 	//WASAPIState->MixFormat->nAvgBytesPerSec = WASAPIState->MixFormat->nSamplesPerSec * WASAPIState->MixFormat->nBlockAlign;
+
 	WASAPIState->ChannelCountIn = WASAPIState->MixFormat->nChannels;
-	
+	WASAPIState->SampleRate = WASAPIState->MixFormat->nSamplesPerSec;
 	WASAPIState->BytesPerFrame = WASAPIState->MixFormat->nChannels * (WASAPIState->MixFormat->wBitsPerSample / 8);
 
 	REFERENCE_TIME DefaultInterval, MinimumInterval;
@@ -226,8 +240,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device timing info. "); return WASAPIState; }
 	printf("[WASAPI] Default transaction period is %lld ticks, minimum is %lld ticks.\n", DefaultInterval, MinimumInterval);
 
-	WASAPIState->SampleRate = WASAPIState->MixFormat->nSamplesPerSec;
-
+	// Configure a capture client.
 	UINT32 StreamFlags;
 	if (DeviceDirection == 1) { StreamFlags = AUDCLNT_STREAMFLAGS_NOPERSIST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK; }
 	else if (DeviceDirection == 0) { StreamFlags = (AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK); }
@@ -250,6 +263,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	ErrorCode = WASAPIState->Client->lpVtbl->GetService(WASAPIState->Client, &IID_IAudioCaptureClient, (void**)&(WASAPIState->CaptureClient));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not get audio capture client."); return WASAPIState; }
 	
+	// Begin capturing audio. It will be received on a separate thread.
 	ErrorCode = WASAPIState->Client->lpVtbl->Start(WASAPIState->Client);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not start audio client."); return WASAPIState; }
 	WASAPIState->StreamReady = TRUE;
@@ -261,11 +275,13 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 }
 
 // Gets the default render or capture device.
-static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture)
+// isCapture: If true, gets the default capture device, otherwise gets the default render device.
+// isMultimedia: If true, gets the system default devide for "multimedia" use, otheriwse for "communication" use.
+static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture, BOOL isMultimedia)
 {
 	HRESULT ErrorCode;
 	IMMDevice* Device;
-	ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDefaultAudioEndpoint(WASAPIState->DeviceEnumerator, isCapture ? eCapture : eRender, eMultimedia, &Device);
+	ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDefaultAudioEndpoint(WASAPIState->DeviceEnumerator, isCapture ? eCapture : eRender, isMultimedia ? eMultimedia : eCommunications, &Device);
 	if (FAILED(ErrorCode))
 	{
 		WASAPIERROR(ErrorCode, "Failed to get default device.");
@@ -412,9 +428,10 @@ void* ProcessEventAudioIn(void* stateObj)
 // sugBufferSize: Buffer size you'd like to request. Ignored, as this is determined by the system. See note below.
 // inputDevice: The device you want to receive audio from. Loopback is supported, so this can be either a capture or render device.
 //              To get the default render device, specify "defaultRender"
-//              To get the default capture device, specify "defaultCapture"
-//              A device ID as presented by WASAPI can be specified, regardless of what type it is.
-//              If you do not wish to receive audio, specify null.
+//              To get the default multimedia capture device, specify "defaultCapture"
+//              To get the default communications capture device, specify "defaultCaptureComm"
+//              A device ID as presented by WASAPI can be specified, regardless of what type it is. If it is invalid, the default render device is used as fallback.
+//              If you do not wish to receive audio, specify null. NOT YET IMPLEMENTED
 // outputDevice: The device you want to output audio to. OUTPUT IS NOT IMPLEMENTED.
 // NOTES: 
 // Regarding format requests: Sample rate and channel count is determined by the system settings, and cannot be changed. Resampling/mixing will be required in your application if you cannot accept the current system mode. Make sure to check `WASAPIState` for the current system mode.

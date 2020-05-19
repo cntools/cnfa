@@ -586,4 +586,41 @@ interface IAudioCaptureClient
     CONST_VTBL struct IAudioCaptureClientVtbl *lpVtbl;
 };
 
+typedef interface IMMEndpoint IMMEndpoint;
+
+    typedef struct IMMEndpointVtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            IMMEndpoint * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            IMMEndpoint * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            IMMEndpoint * This);
+        
+        /* [helpstring][id] */ HRESULT ( STDMETHODCALLTYPE *GetDataFlow )( 
+            IMMEndpoint * This,
+            /* [annotation][out] */ 
+            _Out_  EDataFlow *pDataFlow);
+        
+        END_INTERFACE
+    } IMMEndpointVtbl;
+
+    interface IMMEndpoint
+    {
+        CONST_VTBL struct IMMEndpointVtbl *lpVtbl;
+    };
+
+#define DEVICE_STATE_ACTIVE      0x00000001
+#define DEVICE_STATE_DISABLED    0x00000002
+#define DEVICE_STATE_NOTPRESENT  0x00000004
+#define DEVICE_STATE_UNPLUGGED   0x00000008
+#define DEVICE_STATEMASK_ALL     0x0000000f
+
 #endif // _CNFA_WASAPI_UTILS_H
