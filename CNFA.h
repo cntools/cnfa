@@ -28,7 +28,7 @@ extern "C" {
 //I.e. if `out` is null, only use in to read.  If in is null, only place samples in out.
 typedef void(*CNFACBType)( struct CNFADriver * sd, short * in, short * out, int framesr, int framesp );
 
-typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect );
+typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
 
 struct CNFADriver
 {
@@ -55,7 +55,7 @@ struct CNFADriver
 // outputSelect = No standardization, NULL is OK for default.
 
 struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPS, int reqChannelsRec,
-	int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect );
+	int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
 	
 int CNFAState( struct CNFADriver * cnfaobject ); //returns bitmask.  1 if mic recording, 2 if play back running, 3 if both running.
 void CNFAClose( struct CNFADriver * cnfaobject );
