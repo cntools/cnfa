@@ -21,7 +21,7 @@
 #define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%lX\n", message, error))
 #define PRINTGUID(guid) (printf("{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
 
-#define WASAPI_EXTRA_DEBUG TRUE
+#define WASAPI_EXTRA_DEBUG FALSE
 
 // Forward declarations
 void CloseCNFAWASAPI(void* stateObj);
@@ -39,6 +39,7 @@ DEFINE_GUID(IID_IMMEndpoint, 0x1BE09788L, 0x6894, 0x4089, 0x85, 0x86, 0x9A, 0x2A
 DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4CL, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
 DEFINE_GUID(IID_IAudioCaptureClient, 0xC8ADBD64L, 0xE71E, 0x48a0, 0xA4, 0xDE, 0x18, 0x5C, 0x39, 0x5C, 0xD3, 0x17);
 
+// This is a fallback if the client application does not provide a GUID.
 DEFINE_GUID(CNFA_GUID, 0x899081C7L, 0x9428, 0x4103, 0x87, 0x93, 0x26, 0x47, 0xE5, 0xEA, 0xA2, 0xB4);
 
 struct CNFADriverWASAPI
@@ -150,7 +151,13 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	// We need to find the appropriate device to use.
 	BYTE DeviceDirection = 2; // 0 = Render, 1 = Capture, 2 = Unknown
 
-	if (WASAPIState->InputDeviceID == NULL || strcmp(WASAPIState->InputDeviceID, "defaultRender") == 0)
+	if (WASAPIState->InputDeviceID == NULL)
+	{
+		WASAPIPRINT("No device specified, attempting to use system default multimedia capture device as input.");
+		WASAPIState->Device = WASAPIGetDefaultDevice(TRUE, TRUE);
+		DeviceDirection = 1;
+	}
+	else if (strcmp(WASAPIState->InputDeviceID, "defaultRender") == 0)
 	{
 		WASAPIPRINT("Attempting to use system default render device as input.");
 		WASAPIState->Device = WASAPIGetDefaultDevice(FALSE, TRUE);
@@ -174,9 +181,9 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDevice(WASAPIState->DeviceEnumerator, DeviceIDasLPWSTR, &(WASAPIState->Device));
 		if (FAILED(ErrorCode))
 		{
-			WASAPIERROR(ErrorCode, "Failed to get audio device from the given ID. Using default render device instead.");
-			WASAPIState->Device = WASAPIGetDefaultDevice(FALSE, TRUE);
-			DeviceDirection = 0;
+			WASAPIERROR(ErrorCode, "Failed to get audio device from the given ID. Using default multimedia capture device instead.");
+			WASAPIState->Device = WASAPIGetDefaultDevice(TRUE, TRUE);
+			DeviceDirection = 1;
 		}
 		else
 		{
@@ -358,9 +365,13 @@ void* ProcessEventAudioIn(void* stateObj)
 
 	while (state->KeepGoing)
 	{
-		// Waits up to infinite time to get the next event from the audio system.
-		// TODO: Add and handle a timeout, this thread may not exit until more data is received...
-		DWORD WaitResult = WaitForSingleObject(state->EventHandleIn, INFINITE);
+		// Waits up to 500ms to get the next audio buffer from the system.
+		// The timeout is used because if no audio sessions are active, WASAPI stops sending buffers after a few that indicate silence.
+		// This means that if the client tries to exit, this loop would not complete, and therefore the thread would not exit, until the next buffer is received.
+		// This is mostly an issue in loopback mode, where true silence is common, not so much on microphones.
+		DWORD WaitResult = WaitForSingleObject(state->EventHandleIn, 500);
+		if (WaitResult == WAIT_TIMEOUT) { continue; } // We are in a period of silence. Keep waiting for audio.
+		else if (WaitResult != WAIT_OBJECT_0) { WASAPIERROR(E_FAIL, "Something went wrong while waiting for an audio event."); continue; }
 
 		ErrorCode = state->CaptureClient->lpVtbl->GetNextPacketSize(state->CaptureClient, &PacketLength);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio packet size."); continue; }
@@ -443,7 +454,7 @@ void* ProcessEventAudioIn(void* stateObj)
 //              To get the default render device, specify "defaultRender"
 //              To get the default multimedia capture device, specify "defaultCapture"
 //              To get the default communications capture device, specify "defaultCaptureComm"
-//              A device ID as presented by WASAPI can be specified, regardless of what type it is. If it is invalid, the default render device is used as fallback.
+//              A device ID as presented by WASAPI can be specified, regardless of what type it is. If it is invalid, the default capture device is used as fallback.
 //              If you do not wish to receive audio, specify null. NOT YET IMPLEMENTED
 // outputDevice: The device you want to output audio to. OUTPUT IS NOT IMPLEMENTED.
 // NOTES: 
@@ -472,4 +483,4 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 	return StartWASAPIDriver(InitState);
 }
 
-REGISTER_CNFA(cnfa_wasapi, 9, "WASAPI", InitCNFAWASAPIDriver);
+REGISTER_CNFA(cnfa_wasapi, 10, "WASAPI", InitCNFAWASAPIDriver);
