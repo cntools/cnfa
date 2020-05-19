@@ -1,9 +1,8 @@
-//Copyright 2015 <>< Charles Lohr under the ColorChord License.
+//Copyright 2015-2020 <>< Charles Lohr under the ColorChord License.
 
 #include "CNFA.h"
 #include "os_generic.h"
 #include <stdlib.h>
-#include "parameters.h"
 
 struct CNFADriverNull
 {
@@ -27,13 +26,14 @@ int CNFAStateNull( void * object )
 }
 
 
-void * InitCNFANull( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
+void * InitCNFANull( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
-	struct CNFADriverNull * r = malloc( sizeof( struct CNFADriverNull ) );
+	struct CNFADriverNull * r = (struct CNFADriverNull *)malloc( sizeof( struct CNFADriverNull ) );
 	r->CloseFn = CloseCNFANull;
 	r->StateFn = CNFAStateNull;
 	r->callback = cb;
 	r->sps = reqSPS;
+	r->opaque = opaque;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
 	return r;

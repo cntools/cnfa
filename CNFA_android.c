@@ -55,15 +55,15 @@ struct CNFADriverAndroid
 void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid*)context;
-	r->callback( (struct CNFADriver*)r, r->recorderBuffer, 0, r->buffsz, 0 );
-	(*r->recorderBufferQueue)->Enqueue( r->recorderBufferQueue, r->recorderBuffer, r->recorderBufferSizeBytes);
+	r->callback( (struct CNFADriver*)r, r->recorderBuffer, 0, r->buffsz/(sizeof(short)*r->channelsRec), 0 );
+	(*r->recorderBufferQueue)->Enqueue( r->recorderBufferQueue, r->recorderBuffer, r->recorderBufferSizeBytes/(r->channelsRec*sizeof(short)) );
 }
 
 void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid*)context;
-	r->callback( (struct CNFADriver*)r, 0, r->playerBuffer, 0, r->buffsz );
-	(*r->playerBufferQueue)->Enqueue( r->playerBufferQueue, r->playerBuffer, r->playerBufferSizeBytes);
+	r->callback( (struct CNFADriver*)r, 0, r->playerBuffer, 0, r->buffsz/(sizeof(short)*r->channelsPlay) );
+	(*r->playerBufferQueue)->Enqueue( r->playerBufferQueue, r->playerBuffer, r->playerBufferSizeBytes/(r->channelsPlay*sizeof(short)));
 }
 
 static struct CNFADriverAndroid* InitAndroidDriver( struct CNFADriverAndroid * r )
@@ -285,13 +285,14 @@ int AndroidHasPermissions(const char* perm_name);
 void AndroidRequestAppPermissions(const char * perm);
 
 
-void * InitCNFAAndroid( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
+void * InitCNFAAndroid( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid *)malloc( sizeof( struct CNFADriverAndroid ) );
 	memset( r, 0, sizeof( *r) );
 	r->CloseFn = CloseCNFAAndroid;
 	r->StateFn = CNFAStateAndroid;
 	r->callback = cb;
+	r->opaque = opaque;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
 	r->sps = reqSPS;

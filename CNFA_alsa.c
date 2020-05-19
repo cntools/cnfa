@@ -56,6 +56,8 @@ void CloseCNFAAlsa( void * v )
 static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, snd_pcm_uframes_t * bufsize, struct CNFADriverAlsa * a )
 {
 	int err;
+	int bufs;
+	int dir;
 	snd_pcm_hw_params_t *hw_params;
 	if ((err = snd_pcm_hw_params_malloc (&hw_params)) < 0) {
 		fprintf (stderr, "cannot allocate hardware parameter structure (%s)\n",
@@ -93,7 +95,7 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 		goto fail;
 	}
 
-	int dir = 0;
+	dir = 0;
 	if( (err = snd_pcm_hw_params_set_period_size_near(handle, hw_params, bufsize, &dir)) < 0 )
 	{
 		fprintf( stderr, "cannot set period size. (%s)\n",
@@ -102,7 +104,7 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 	}
 
 	//NOTE: This step is critical for low-latency sound.
-	int bufs = *bufsize*3;
+	bufs = *bufsize*3;
 	if( (err = snd_pcm_hw_params_set_buffer_size(handle, hw_params, bufs)) < 0 )
 	{
 		fprintf( stderr, "cannot set snd_pcm_hw_params_set_buffer_size size. (%s)\n",
@@ -189,31 +191,6 @@ failhard:
 	return -1;
 }
 
-#if 0
-static void record_callback (snd_async_handler_t *ahandler)
-{
-	snd_pcm_t *handle = snd_async_handler_get_pcm(ahandler);
-	struct CNFADriverAlsa *data = (struct CNFADriverAlsa*)snd_async_handler_get_callback_private(ahandler);
-	int err;
-	snd_pcm_sframes_t avail;
-	avail = snd_pcm_avail_update(handle);
-	short samples[avail];
-
-printf( "READ: %d %d\n", 0, avail );
-	err = snd_pcm_readi(handle, samples, avail);
-printf( "READ: %d %d\n", err, avail );
-	if (err < 0) {
-		printf("Read error: %s\n", snd_strerror(err));
-		exit(EXIT_FAILURE);
-	}
-	if (err != avail) {
-		printf("Read error: written %i expected %li\n", err, avail);
-		exit(EXIT_FAILURE);
-	}
-	data->recording = 1;
-	data->callback( (struct CNFADriver *)data, samples, 0, avail, 0 );
-}
-#endif
 void * RecThread( void * v )
 {
 	struct CNFADriverAlsa * r = (struct CNFADriverAlsa *)v;
@@ -247,7 +224,7 @@ void * PlayThread( void * v )
 	//int total_avail = snd_pcm_avail(r->playback_handle);
 
 	snd_pcm_start(r->playback_handle);
-	r->callback( (struct CNFADriver *)r, 0, samples, 0, r->bufsize );
+	r->callback( (struct CNFADriver *)r, 0, samples, 0, r->bufsize/r->channelsPlay );
 	err = snd_pcm_writei(r->playback_handle, samples, r->bufsize);
 
 
@@ -369,14 +346,14 @@ fail:
 
 
 
-void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect )
+void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
-	struct CNFADriverAlsa * r = malloc( sizeof( struct CNFADriverAlsa ) );
+	struct CNFADriverAlsa * r = (struct CNFADriverAlsa *)malloc( sizeof( struct CNFADriverAlsa ) );
 
 	r->CloseFn = CloseCNFAAlsa;
 	r->StateFn = CNFAStateAlsa;
 	r->callback = cb;
-
+	r->opaque = opaque;
 	r->sps = reqSPS;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsPlay;
