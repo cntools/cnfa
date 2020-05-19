@@ -31,7 +31,7 @@ static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture, BOOL isMultimedia);
 static void WASAPIPrintAllDeviceLists();
 static void WASAPIPrintDeviceList(EDataFlow dataFlow);
 void* ProcessEventAudioIn(void* stateObj);
-void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice);
+void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice, void* opaque);
 
 DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395L, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
 DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2L, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
@@ -372,14 +372,28 @@ void* ProcessEventAudioIn(void* stateObj)
 		ErrorCode = state->CaptureClient->lpVtbl->GetBuffer(state->CaptureClient, &DataBuffer, &FramesAvailable, &BufferStatus, NULL, NULL);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio buffer."); continue; }
 
+		// "The data in the packet is not correlated with the previous packet's device position; this is possibly due to a stream state transition or timing glitch."
+		// There's no real way for us to notify the client about this...
+		if ((BufferStatus & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY) == AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
+		{
+			WASAPIPRINT("A data discontinuity was detected.");
+		}
+
 		if ((BufferStatus & AUDCLNT_BUFFERFLAGS_SILENT) == AUDCLNT_BUFFERFLAGS_SILENT)
 		{
-			// TODO: Clear the buffer, as there are no active streams anymore, and we won't receive any more events until a stream starts.
-		}
-		else if ((BufferStatus & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY) == AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
-		{
-			// TODO: Handle this event.
-			// "The data in the packet is not correlated with the previous packet's device position; this is possibly due to a stream state transition or timing glitch."
+			UINT32 Length = FramesAvailable * state->MixFormat->nChannels;
+			if (Length == 0) { Length = state->MixFormat->nChannels; }
+			INT16* AudioData = malloc(Length * 2);
+			for (int i = 0; i < Length; i++) { AudioData[i] = 0; }
+
+			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
+			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
+			else { Released = TRUE; }
+			
+			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] SILENCE buffer received. Passing on %d samples.\n", Length); }
+
+			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, Length / state->MixFormat->nChannels, 0);
+			free(AudioData);
 		}
 		else
 		{
@@ -395,11 +409,9 @@ void* ProcessEventAudioIn(void* stateObj)
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 			else { Released = TRUE; }
 
-			if (WASAPI_EXTRA_DEBUG) {
-				printf("[WASAPI] Got %d bytes of audio data in %d frames. Fowarding to %p.\n", Size, FramesAvailable, (void*) WASAPIState->Callback); 
-			}
+			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] Got %d bytes of audio data in %d frames. Fowarding to %p.\n", Size, FramesAvailable, (void*) WASAPIState->Callback); }
 
-			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, (FramesAvailable * state->MixFormat->nChannels) / 2, 0);
+			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, FramesAvailable, 0);
 			free(AudioData);
 		}
 
@@ -420,6 +432,7 @@ void* ProcessEventAudioIn(void* stateObj)
 	return 0;
 }
 
+// Begins preparation of the WASAPI driver.
 // callback: The user application's function where audio data is placed when received from the system and/or audio data is retrieved from to give to the system.
 // sessionName: How your session will appear to the end user if you play audio.
 // reqSampleRate: Sample rate you'd like to request. Ignored, as this is determined by the system. See note below.
@@ -437,12 +450,14 @@ void* ProcessEventAudioIn(void* stateObj)
 // Regarding format requests: Sample rate and channel count is determined by the system settings, and cannot be changed. Resampling/mixing will be required in your application if you cannot accept the current system mode. Make sure to check `WASAPIState` for the current system mode.
 //                            Note also that both sample rate and channel count can vary between input and output!
 // Currently audio output (playing) is not yet implemented.
-void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice)
+void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice, void* opaque)
 {
 	struct CNFADriverWASAPI * InitState = malloc(sizeof(struct CNFADriverWASAPI));
+	memset(InitState, 0, sizeof(*InitState));
 	InitState->CloseFn = CloseCNFAWASAPI;
 	InitState->StateFn = CNFAStateWASAPI;
 	InitState->Callback = callback;
+	InitState->Opaque = opaque;
 	// TODO: Waiting for CNFA to support directional sample rates.
 	InitState->SampleRate = reqSampleRate; // Will be overridden by the actual system setting.
 	InitState->ChannelCountIn = reqChannelsIn; // Will be overridden by the actual system setting.
@@ -457,5 +472,4 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 	return StartWASAPIDriver(InitState);
 }
 
-// This is the equivalent of a static constructor that also calls the base constructor.
 REGISTER_CNFA(cnfa_wasapi, 9, "WASAPI", InitCNFAWASAPIDriver);
