@@ -151,7 +151,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	ErrorCode = WASAPIState->Device->lpVtbl->Activate(WASAPIState->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(WASAPIState->Client));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio client. "); return WASAPIState; }
 
-	ErrorCode = WASAPIState->Client->lpVtbl->GetMixFormat(WASAPIState->Client, &WASAPIState->MixFormat);
+	ErrorCode = WASAPIState->Client->lpVtbl->GetMixFormat(WASAPIState->Client, &(WASAPIState->MixFormat));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get mix format. "); return WASAPIState; }
 	printf("[WASAPI] Mix format is %d channel, %luHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
 	printf("[WASAPI] Mix format is format %d, %dB block-aligned, with %dB of extra data in this definition.\n", WASAPIState->MixFormat->wFormatTag, WASAPIState->MixFormat->nBlockAlign, WASAPIState->MixFormat->cbSize);
@@ -310,7 +310,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			// TODO THIS SECTION NEEDS CLEANUP AND HANDLING OF OTHER DATATYPES!!!
 			UINT32 Size = FramesAvailable * state->BytesPerFrame; // Size in bytes
 			FLOAT* DataAsFloat = (FLOAT*)DataBuffer;
-			SHORT* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2);
+			INT16* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2);
 			for (INT32 i = 0; i < Size / 4; i++) { AudioData[i] = (SHORT)(DataAsFloat[i] * 32767.5F); }
 
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
