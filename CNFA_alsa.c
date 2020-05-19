@@ -224,9 +224,8 @@ void * PlayThread( void * v )
 	//int total_avail = snd_pcm_avail(r->playback_handle);
 
 	snd_pcm_start(r->playback_handle);
-	r->callback( (struct CNFADriver *)r, 0, samples, 0, r->bufsize/r->channelsPlay );
+	r->callback( (struct CNFADriver *)r, 0, samples, 0, r->bufsize );
 	err = snd_pcm_writei(r->playback_handle, samples, r->bufsize);
-
 
 	while( err >= 0 )
 	{
