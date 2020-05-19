@@ -57,8 +57,8 @@ struct CNFADriverWASAPI
 	GUID* SessionID; // In order to have different CNFA-based applications individually controllable from the volume mixer, this should be set differently for every client program, but constant across all runs/builds of that application.
 
 	// Everything below here is for internal use only. Do not attempt to interact with these items.
-	char* InputDeviceID; // The device to use for getting input from. Can be a render device (operating in loopback), or a capture device.
-	char* OutputDeviceID; // Not yet used.
+	const char* InputDeviceID; // The device to use for getting input from. Can be a render device (operating in loopback), or a capture device.
+	const char* OutputDeviceID; // Not yet used.
 	IMMDeviceEnumerator* DeviceEnumerator; // The base object that allows us to look through the system's devices, and from there get everything else.
 	IMMDevice* Device; // The device we are taking input from.
 	IAudioClient* Client; // The base client we use for getting input.
@@ -96,7 +96,7 @@ void CloseCNFAWASAPI(void* stateObj)
 		if (state->DeviceEnumerator != NULL) { state->DeviceEnumerator->lpVtbl->Release(state->DeviceEnumerator); }
 		free(stateObj);
 		CoUninitialize();
-		printf("[WASAPI] Cleanup completed. Goodbye.");
+		printf("[WASAPI] Cleanup completed. Goodbye.\n");
 	}
 }
 
@@ -140,9 +140,6 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	BYTE DeviceDirection = 2; // 0 = Render, 1 = Capture, 2 = Unknown
 
-	printf(&WASAPIState->InputDeviceID);
-	printf(strcmp(WASAPIState->InputDeviceID, "defaultRender"));
-
 	// TODO: Get info from Charles as to what the standard values for "use this kind of default device" should be.
 	if (WASAPIState->InputDeviceID == NULL || strcmp(WASAPIState->InputDeviceID, "defaultRender") == 0)
 	{
@@ -158,8 +155,11 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	}
 	else // A specific device was selected by ID.
 	{
-		printf("[WASAPI] Attempting to find device \"%s\".", WASAPIState->InputDeviceID);
-		LPWSTR DeviceIDasLPWSTR; // TODO: Actually convert. WHY IS THIS EVEN REQUIRED?!?! COME ON
+		LPWSTR DeviceIDasLPWSTR;
+		DeviceIDasLPWSTR = malloc(strlen(WASAPIState->InputDeviceID) * sizeof(WCHAR));
+		mbstowcs(DeviceIDasLPWSTR, WASAPIState->InputDeviceID, strlen(WASAPIState->InputDeviceID));
+		printf("[WASAPI] Attempting to find specified device \"%ls\".\n", DeviceIDasLPWSTR);
+
 		ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDevice(WASAPIState->DeviceEnumerator, DeviceIDasLPWSTR, &(WASAPIState->Device));
 		if (FAILED(ErrorCode))
 		{
@@ -169,7 +169,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		}
 		else
 		{
-			printf("[WASAPI] Found specified device.");
+			printf("[WASAPI] Found specified device.\n");
 			DWORD DeviceState;
 			ErrorCode = WASAPIState->Device->lpVtbl->GetState(WASAPIState->Device, &DeviceState);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device state."); }
@@ -183,7 +183,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	if (DeviceDirection == 2) // We still don't know what type of device we are trying to use. Query the endpoint to find out.
 	{
 		IMMEndpoint* Endpoint;
-		ErrorCode = WASAPIState->Device->lpVtbl->QueryInterface(WASAPIState->Device, &IID_IMMEndpoint, &Endpoint);
+		ErrorCode = WASAPIState->Device->lpVtbl->QueryInterface(WASAPIState->Device, &IID_IMMEndpoint, (void**)&Endpoint);
 		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get endpoint of device."); }
 
 		EDataFlow DataFlow;
@@ -195,10 +195,12 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		if (Endpoint != NULL) { Endpoint->lpVtbl->Release(Endpoint); }
 	}
 
+	char* DeviceDirectionDesc = (DeviceDirection == 0) ? "render" : ((DeviceDirection == 1) ? "capture" : "UNKNOWN");
+
 	LPWSTR DeviceID;
 	ErrorCode = WASAPIState->Device->lpVtbl->GetId(WASAPIState->Device, &DeviceID);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return WASAPIState; }
-	else { printf("[WASAPI] Using device ID \"%ls\".\n", DeviceID); }
+	else { printf("[WASAPI] Using device ID \"%ls\", which is a %s device.\n", DeviceID, DeviceDirectionDesc); }
 
 	ErrorCode = WASAPIState->Device->lpVtbl->Activate(WASAPIState->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(WASAPIState->Client));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio client. "); return WASAPIState; }
@@ -284,7 +286,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 {
 	printf("[WASAPI] %s Devices:\n", (dataFlow == eCapture ? "Capture" : "Render"));
 	IMMDeviceCollection* Devices;
-	HRESULT ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->EnumAudioEndpoints(WASAPIState->DeviceEnumerator, dataFlow, DEVICE_STATE_ACTIVE, &Devices);
+	HRESULT ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->EnumAudioEndpoints(WASAPIState->DeviceEnumerator, dataFlow, (WASAPI_EXTRA_DEBUG ? DEVICE_STATEMASK_ALL : DEVICE_STATE_ACTIVE), &Devices);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio endpoints."); return; }
 
 	UINT32 DeviceCount;
