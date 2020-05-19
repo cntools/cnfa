@@ -31,6 +31,7 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 
 DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395L, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
 DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2L, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
+DEFINE_GUID(IID_IMMEndpoint, 0x1BE09788L, 0x6894, 0x4089, 0x85, 0x86, 0x9A, 0x2A, 0x6C, 0x26, 0x5A, 0xC5);
 DEFINE_GUID(IID_IAudioClient, 0x1CB9AD4CL, 0xDBFA, 0x4c32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
 DEFINE_GUID(IID_IAudioCaptureClient, 0xC8ADBD64L, 0xE71E, 0x48a0, 0xA4, 0xDE, 0x18, 0x5C, 0x39, 0x5C, 0xD3, 0x17);
 
@@ -52,6 +53,8 @@ struct CNFADriverWASAPI
 	GUID* SessionID; // In order to have different CNFA-based applications individually controllable from the volume mixer, this should be set differently for every client program, but constant across all runs/builds of that application.
 
 	// Everything below here is for internal use only. Do not attempt to interact with these items.
+	char* InputDeviceID; // The device to use for getting input from. Can be a render device (operating in loopback), or a capture device.
+	char* OutputDeviceID; // Not yet used.
 	IMMDeviceEnumerator* DeviceEnumerator; // The base object that allows us to look through the system's devices, and from there get everything else.
 	IMMDevice* Device; // The device we are taking input from.
 	IAudioClient* Client; // The base client we use for getting input.
@@ -66,7 +69,6 @@ struct CNFADriverWASAPI
 	HANDLE EventHandleIn; // The handle used to wait for more input data to be ready in the input thread.
 	HANDLE TaskHandleOut; // The task used to request output thread priority changes.
 	HANDLE TaskHandleIn; // The task used to request input thread priority changes.
-
 };
 
 // This is where the driver's current state is stored.
@@ -99,7 +101,7 @@ int CNFAStateWASAPI(void* stateObj)
 	struct CNFADriverWASAPI* state = (struct CNFADriverWASAPI*)stateObj;
 	if(state != NULL)
 	{
-		if (state->StreamReady) {return 1;}
+		if (state->StreamReady) { return 1; }
 	}
 	return 0;
 }
@@ -132,17 +134,67 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	WASAPIPrintAllDeviceLists();
 
-	WASAPIState->Device = WASAPIGetDefaultDevice(FALSE);
+	BYTE DeviceDirection = 2; // 0 = Render, 1 = Capture, 2 = Unknown
+
+	printf(&WASAPIState->InputDeviceID);
+	printf(strcmp(WASAPIState->InputDeviceID, "defaultRender"));
+
+	// TODO: Get info from Charles as to what the standard values for "use this kind of default device" should be.
+	if (WASAPIState->InputDeviceID == NULL || strcmp(WASAPIState->InputDeviceID, "defaultRender") == 0)
+	{
+		WASAPIPRINT("Attempting to use system default render device as input.");
+		WASAPIState->Device = WASAPIGetDefaultDevice(FALSE);
+		DeviceDirection = 0;
+	}
+	else if (strcmp(WASAPIState->InputDeviceID, "defaultCapture") == 0)
+	{
+		WASAPIPRINT("Attempting to use system default capture device as input.");
+		WASAPIState->Device = WASAPIGetDefaultDevice(TRUE);
+		DeviceDirection = 1;
+	}
+	else // A specific device was selected by ID.
+	{
+		printf("[WASAPI] Attempting to find device \"%s\".", WASAPIState->InputDeviceID);
+		LPWSTR DeviceIDasLPWSTR; // TODO: Actually convert. WHY IS THIS EVEN REQUIRED?!?! COME ON
+		ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDevice(WASAPIState->DeviceEnumerator, DeviceIDasLPWSTR, &(WASAPIState->Device));
+		if (FAILED(ErrorCode))
+		{
+			WASAPIERROR(ErrorCode, "Failed to get audio device from the given ID. Using default render device instead.");
+			WASAPIState->Device = WASAPIGetDefaultDevice(FALSE);
+			DeviceDirection = 0;
+		}
+		else
+		{
+			printf("[WASAPI] Found specified device.");
+			DWORD DeviceState;
+			ErrorCode = WASAPIState->Device->lpVtbl->GetState(WASAPIState->Device, &DeviceState);
+			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device state."); }
+
+			if ((DeviceState & DEVICE_STATE_DISABLED) == DEVICE_STATE_DISABLED) { WASAPIERROR(E_FAIL, "The specified device is currently disabled."); }
+			if ((DeviceState & DEVICE_STATE_NOTPRESENT) == DEVICE_STATE_NOTPRESENT) { WASAPIERROR(E_FAIL, "The specified device is not currently present."); }
+			if ((DeviceState & DEVICE_STATE_UNPLUGGED) == DEVICE_STATE_UNPLUGGED) { WASAPIERROR(E_FAIL, "The specified device is currently unplugged."); }
+		}
+	}
+
+	if (DeviceDirection == 2) // We still don't know what type of device we are trying to use. Query the endpoint to find out.
+	{
+		IMMEndpoint* Endpoint;
+		ErrorCode = WASAPIState->Device->lpVtbl->QueryInterface(WASAPIState->Device, &IID_IMMEndpoint, &Endpoint);
+		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get endpoint of device."); }
+
+		EDataFlow DataFlow;
+		ErrorCode = Endpoint->lpVtbl->GetDataFlow(Endpoint, &DataFlow);
+		if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Could not determine endpoint type."); }
+
+		DeviceDirection = (DataFlow == eRender) ? 0 : 1;
+		
+		if (Endpoint != NULL) { Endpoint->lpVtbl->Release(Endpoint); }
+	}
 
 	LPWSTR* DeviceID;
 	ErrorCode = WASAPIState->Device->lpVtbl->GetId(WASAPIState->Device, &DeviceID);
-	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return WASAPIState;; }
+	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return WASAPIState; }
 	else { printf("[WASAPI] Using device ID \"%ls\".\n", DeviceID); }
-
-	BYTE DeviceIsCapture = 2; // 0 = Render, 1 = Capture, 2 = Unknown
-
-	// TODO: Implement detection.
-	DeviceIsCapture = 0;
 
 	ErrorCode = WASAPIState->Device->lpVtbl->Activate(WASAPIState->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(WASAPIState->Client));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio client. "); return WASAPIState; }
@@ -152,8 +204,9 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	printf("[WASAPI] Mix format is %d channel, %dHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
 	printf("[WASAPI] Mix format is format %d, %dB block-aligned, with %dB of extra data in this definition.\n", WASAPIState->MixFormat->wFormatTag, WASAPIState->MixFormat->nBlockAlign, WASAPIState->MixFormat->cbSize);
 
-	// We'll request PCM, 16bbs data from the system. It should be able to do this conversion for us, as long as we are not in exclusive mode.
+	// We'll request PCM, 16bpS data from the system. It should be able to do this conversion for us, as long as we are not in exclusive mode.
 	// TODO: This isn't working, no matter what combination I try to ask it for. Figure this out, so we don't have to do the conversion ourselves.
+	// Also, we probably don't handle channel counts > 2 with this current setup.
 	//WASAPIState->MixFormat->wFormatTag = WAVE_FORMAT_PCM;
 	//WASAPIState->MixFormat->wBitsPerSample = 16 * WASAPIState->MixFormat->nChannels;
 	//WASAPIState->MixFormat->nBlockAlign = 2 * WASAPIState->MixFormat->nChannels;
@@ -170,8 +223,8 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	WASAPIState->SampleRate = WASAPIState->MixFormat->nSamplesPerSec;
 
 	UINT32 StreamFlags;
-	if (DeviceIsCapture == 1) { StreamFlags = AUDCLNT_STREAMFLAGS_NOPERSIST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK; }
-	else if (DeviceIsCapture == 0) { StreamFlags = (AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK); }
+	if (DeviceDirection == 1) { StreamFlags = AUDCLNT_STREAMFLAGS_NOPERSIST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK; }
+	else if (DeviceDirection == 0) { StreamFlags = (AUDCLNT_STREAMFLAGS_LOOPBACK | AUDCLNT_STREAMFLAGS_EVENTCALLBACK); }
 	else { WASAPIPRINT("[ERR] Device type was not determined!"); return WASAPIState; }
 
 	// TODO: Allow the target application to influence the interval we choose. Super realtime apps may require MinimumInterval.
@@ -285,7 +338,7 @@ void* ProcessEventAudioIn(void* stateObj)
 	while (state->KeepGoing)
 	{
 		// Waits up to infinite time to get the next event from the audio system.
-		// TODO: Consider adding a timeout if needed?
+		// TODO: Add and handle a timeout, this thread may not exit until more data is received...
 		DWORD WaitResult = WaitForSingleObject(state->EventHandleIn, INFINITE);
 
 		ErrorCode = state->CaptureClient->lpVtbl->GetNextPacketSize(state->CaptureClient, &PacketLength);
@@ -302,12 +355,19 @@ void* ProcessEventAudioIn(void* stateObj)
 		{
 			// TODO: Clear the buffer, as there are no active streams anymore, and we won't receive any more events until a stream starts.
 		}
+		else if ((BufferStatus & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY) == AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)
+		{
+			// TODO: Handle this event.
+			// "The data in the packet is not correlated with the previous packet's device position; this is possibly due to a stream state transition or timing glitch."
+		}
 		else
 		{
-			// TODO THIS SECTION NEEDS CLEANUP AND HANDLING OF OTHER DATATYPES!!!
+			// TODO: This assumes that data is coming in at 32b float format. While this appears to be the format that WASAPI uses internally in all cases I've seen, I don't think it's guaranteed.
+			// We should instead read the MixFormat information and properly handle the data in other cases.
+			// Ideally, we could request 16b signed PCM data from WASAPI, so we don't even have to do any conversion. But I couldn't get this working yet.
 			UINT32 Size = FramesAvailable * state->BytesPerFrame; // Size in bytes
-			FLOAT* DataAsFloat = (FLOAT*)DataBuffer;
-			UINT16* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2);
+			FLOAT* DataAsFloat = (FLOAT*)DataBuffer; // The raw input data, reinterpreted as floats.
+			UINT16* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2); // The data we are passing to the consumer.
 			for (INT32 i = 0; i < Size / 4; i++) { AudioData[i] = (SHORT)(DataAsFloat[i] * 32767.5F); }
 
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
@@ -352,6 +412,7 @@ void* ProcessEventAudioIn(void* stateObj)
 // NOTES: 
 // Regarding format requests: Sample rate and channel count is determined by the system settings, and cannot be changed. Resampling/mixing will be required in your application if you cannot accept the current system mode. Make sure to check `WASAPIState` for the current system mode.
 //                            Note also that both sample rate and channel count can vary between input and output!
+// Currently audio output (playing) is not yet implemented.
 void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice)
 {
 	struct CNFADriverWASAPI * InitState = malloc(sizeof(struct CNFADriverWASAPI));
@@ -362,6 +423,8 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 	InitState->SampleRate = reqSampleRate; // Will be overridden by the actual system setting.
 	InitState->ChannelCountIn = reqChannelsIn; // Will be overridden by the actual system setting.
 	InitState->ChannelCountOut = reqChannelsOut; // Will be overridden by the actual system setting.
+	InitState->InputDeviceID = inputDevice;
+	InitState->OutputDeviceID = outputDevice;
 	
 	InitState->SessionName = sessionName;
 
