@@ -263,10 +263,9 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 
 		printf("[WASAPI] [%d]: \"%ls\" = \"%ls\"\n", DeviceIndex, DeviceFriendlyName, DeviceID);
 
-		CoTaskMemFree(DeviceFriendlyName);
-		DeviceFriendlyName = NULL;
-		// TODO: This crashes the program for some reason???
-		//PropVariantClear(&Variant);
+		CoTaskMemFree(DeviceID);
+		DeviceID = NULL;
+		PropVariantClear(&Variant);
 		if (Properties != NULL) { Properties->lpVtbl->Release(Properties); }
 		if (Device != NULL) { Device->lpVtbl->Release(Device); }
 	}
