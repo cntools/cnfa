@@ -35,10 +35,6 @@ enum _AUDCLNT_BUFFERFLAGS
 #define REFIID const IID * __MIDL_CONST
 #endif
 
-#undef DEFINE_GUID
-#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-        EXTERN_C const GUID DECLSPEC_SELECTANY name \
-                = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 
 #if defined (__TINYC__)
 #define _COM_Outptr_
@@ -55,12 +51,10 @@ enum _AUDCLNT_BUFFERFLAGS
 #define _Inexpressible_(X)
 #define REFPROPVARIANT const PROPVARIANT * __MIDL_CONST
 typedef struct tagPROPVARIANT PROPVARIANT;
-typedef struct _tagpropertykey PROPERTYKEY;
-typedef IID GUID;
 typedef struct tWAVEFORMATEX WAVEFORMATEX;
-#endif
+typedef IID GUID;
+typedef void* HANDLE;
 
-#if defined(__TINYC__)
 #define CLSCTX_INPROC_SERVER 0x1
 #define CLSCTX_INPROC_HANDLER 0x2
 #define CLSCTX_LOCAL_SERVER	0x4
@@ -71,9 +65,11 @@ typedef struct tWAVEFORMATEX WAVEFORMATEX;
                     CLSCTX_LOCAL_SERVER| \
                     CLSCTX_REMOTE_SERVER)
 typedef unsigned short VARTYPE;
-typedef BYTE PROPVAR_PAD1;
-typedef BYTE PROPVAR_PAD2;
-typedef ULONG PROPVAR_PAD3;
+
+typedef struct _tagpropertykey {
+    GUID fmtid;
+    DWORD pid;
+} PROPERTYKEY;
 
 typedef struct tagDEC {
     USHORT wReserved;
@@ -82,6 +78,11 @@ typedef struct tagDEC {
     ULONG Hi32;
     ULONGLONG Lo64;
 } 	DECIMAL;
+
+// Property varient struct, used for getting the device name info
+typedef BYTE PROPVAR_PAD1;
+typedef BYTE PROPVAR_PAD2;
+typedef ULONG PROPVAR_PAD3;
 struct tagPROPVARIANT {
   union {
     struct tag_inner_PROPVARIANT
@@ -92,8 +93,9 @@ struct tagPROPVARIANT {
         PROPVAR_PAD3 wReserved3;
         union 
             {
-                double filler;
-            } 	;
+                double dblVal;   // Filler for the largest object we need to store
+                LPWSTR pwszVal;  // This is the only parameter we actually use
+            };
         } ;
         DECIMAL decVal;
     };
@@ -104,73 +106,51 @@ struct tagPROPVARIANT {
 #define WINOLEAPI
 typedef interface IUnknown IUnknown;
 typedef  IUnknown *LPUNKNOWN;
-typedef struct tagMULTI_QI
-{
-    const IID *pIID;
-    IUnknown *pItf;
-    HRESULT hr;
-} 	MULTI_QI;
-
-typedef struct _COAUTHIDENTITY
-{
-    /* [size_is] */ USHORT *User;
-    /* [range] */ ULONG UserLength;
-    /* [size_is] */ USHORT *Domain;
-    /* [range] */ ULONG DomainLength;
-    /* [size_is] */ USHORT *Password;
-    /* [range] */ ULONG PasswordLength;
-    ULONG Flags;
-} 	COAUTHIDENTITY;
-
-typedef struct _COAUTHINFO
-{
-    DWORD dwAuthnSvc;
-    DWORD dwAuthzSvc;
-    LPWSTR pwszServerPrincName;
-    DWORD dwAuthnLevel;
-    DWORD dwImpersonationLevel;
-    COAUTHIDENTITY *pAuthIdentityData;
-    DWORD dwCapabilities;
-} 	COAUTHINFO;
-
-typedef struct _COSERVERINFO
-{
-    DWORD dwReserved1;
-    LPWSTR pwszName;
-    COAUTHINFO *pAuthInfo;
-    DWORD dwReserved2;
-} 	COSERVERINFO;
-
-EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
-CoCreateInstanceFromApp(
-    _In_ REFCLSID Clsid,
-    _In_opt_ IUnknown* punkOuter,
-    _In_ DWORD dwClsCtx,
-    _In_opt_ PVOID reserved,
-    _In_ DWORD dwCount,
-    _Inout_updates_(dwCount) MULTI_QI* pResults
-);
-
-HRESULT CoCreateInstance(
-    _In_     REFCLSID rclsid,
-    _In_opt_ LPUNKNOWN pUnkOuter,
-    _In_     DWORD dwClsContext,
-    _In_     REFIID riid,
-    _COM_Outptr_ LPVOID FAR* ppv);
-
-HRESULT CoCreateInstanceEx(
-    _In_ REFCLSID                      Clsid,
-    _In_opt_ IUnknown     *            punkOuter,
-    _In_ DWORD                         dwClsCtx,
-    _In_opt_ COSERVERINFO *            pServerInfo,
-    _In_ DWORD                         dwCount,
-    _Inout_updates_(dwCount) MULTI_QI *pResults );
-
-EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE 
-CoInitialize(_In_opt_ LPVOID pvReserved);
-EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
-CoUninitialize();
 #endif
+
+#ifdef NO_WIN_HEADERS
+#undef DEFINE_GUID
+#define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
+        EXTERN_C const GUID DECLSPEC_SELECTANY name \
+                = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#undef DEFINE_PROPERTYKEY
+#define DEFINE_PROPERTYKEY(name,l,w1,w2,b1,b2,b3,b4,b5,b6,b7,b8,pid) \
+        EXTERN_C const PROPERTYKEY DECLSPEC_SELECTANY name \
+            = { { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }, pid }
+
+// stuff to be able to read device names
+DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14);
+
+#define WINOLEAPI        EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
+#define WINOLEAPI_(type) EXTERN_C DECLSPEC_IMPORT type STDAPICALLTYPE
+
+// Define necessary functions
+WINOLEAPI_(HANDLE) 
+AvSetMmThreadCharacteristicsW(LPCWSTR TaskName, LPDWORD TaskIndex);
+
+WINOLEAPI_(BOOL) 
+AvRevertMmThreadCharacteristics(HANDLE AvrtHandle);
+
+WINOLEAPI        CoInitialize(LPVOID pvReserved);
+WINOLEAPI_(void) CoUninitialize();
+WINOLEAPI_(void) CoTaskMemFree(LPVOID pv);
+
+WINOLEAPI CoCreateInstance(
+    REFCLSID    rclsid,
+    LPUNKNOWN   pUnkOuter,
+    DWORD       dwClsContext,
+    REFIID      riid,
+    LPVOID FAR* ppv);
+
+// WINOLEAPI CoCreateInstanceEx(
+//     REFCLSID      Clsid,
+//     IUnknown     *punkOuter,
+//     DWORD         dwClsCtx,
+//     COSERVERINFO *pServerInfo,
+//     DWORD         dwCount,
+//     MULTI_QI     *pResults );
+
+#endif //NO_WIN_HEADERS
 
 // forward declarations
 typedef struct IMMDevice IMMDevice;
