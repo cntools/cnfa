@@ -47,8 +47,8 @@ int main( int argc, char ** argv )
 		"cnfa_example", Callback, 
 		48000, //Requested samplerate for playback
 		48000, //Requested samplerate for recording
-		2, //Number of record channels.
 		2, //Number of playback channels.
+		2, //Number of record channels.
 		1024, //Buffer size in frames.
 		0, //Could be a string, for the selected input device - but 0 means default.
 		0,  //Could be a string, for the selected output device - but 0 means default.
