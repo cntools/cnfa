@@ -74,6 +74,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #include "CNFA_null.c"
 #if defined(WINDOWS) || defined(WIN32) || defined(WIN64)
 #include "CNFA_winmm.c"
+#include "CNFA_wasapi.c"
 #elif defined( ANDROID ) || defined( __android__ )
 #include "CNFA_android.c"
 #else

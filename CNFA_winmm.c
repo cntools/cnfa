@@ -143,7 +143,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 	int i;
 	WAVEFORMATEX wfmt;
 	memset( &wfmt, 0, sizeof(wfmt) );
-	printf ("WFMT Size (debugging temp for TCC): %d\n", sizeof(wfmt) );
+	printf ("WFMT Size (debugging temp for TCC): %llu\n", sizeof(wfmt) );
 	printf( "WFMT: %d %d %d\n", r->channelsRec, r->sps, r->sps * r->channelsRec );
 	w = r;
 	
@@ -161,7 +161,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 
 	if( r->channelsRec )
 	{
-		printf( "In Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %d\n", waveInGetNumDevs(), WAVE_MAPPER, dwdeviceR );
+		printf( "In Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %ld\n", waveInGetNumDevs(), WAVE_MAPPER, dwdeviceR );
 		int p = waveInOpen(&r->hMyWaveIn, dwdeviceR, &wfmt, (intptr_t)(&HANDLEMIC), 0, CALLBACK_FUNCTION);
 		if( p )
 		{
@@ -193,7 +193,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 	
 	if( r->channelsPlay )
 	{
-		printf( "Out Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %d\n", waveOutGetNumDevs(), WAVE_MAPPER, dwdeviceP );
+		printf( "Out Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %ld\n", waveOutGetNumDevs(), WAVE_MAPPER, dwdeviceP );
 		int p = waveOutOpen( &r->hMyWaveOut, dwdeviceP, &wfmt, (intptr_t)(void*)(&HANDLESINK), (intptr_t)r, CALLBACK_FUNCTION);
 		if( p )
 		{
