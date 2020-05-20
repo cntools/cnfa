@@ -8,6 +8,13 @@
 #include <mmsystem.h>
 #include <stdlib.h>
 
+#if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
+                     || defined(_WIN32) || defined(_WIN64)
+#ifndef strdup
+#define strdup _strdup
+#endif
+#endif
+
 #if defined(WIN32) && !defined( TCC )
 #pragma comment(lib,"winmm.lib")
 #endif
