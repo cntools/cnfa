@@ -12,7 +12,8 @@ struct CNFADriverAlsa
 	CNFACBType callback;
 	short channelsPlay;
 	short channelsRec;
-	int sps;
+	int spsPlay;
+	int spsRec;
 	void * opaque;
 
 	char * devRec;
@@ -247,7 +248,7 @@ void * PlayThread( void * v )
 
 static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 {
-	printf( "...%p %p   %d %d %d\n", r->playback_handle, r->record_handle, r->sps, r->channelsRec, r->channelsPlay );
+	printf( "CNFA Alsa Init %p %p  (%d %d) %d %d\n", r->playback_handle, r->record_handle, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec );
 
 	int err;
 	if( r->channelsPlay )
@@ -272,7 +273,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 
 	if( r->playback_handle )
 	{
-		if( SetHWParams( r->playback_handle, &r->sps, &r->channelsPlay, &r->bufsize, r ) < 0 ) 
+		if( SetHWParams( r->playback_handle, &r->spsPlay, &r->channelsPlay, &r->bufsize, r ) < 0 ) 
 			goto fail;
 		if( SetSWParams( r, r->playback_handle, 0 ) < 0 )
 			goto fail;
@@ -280,7 +281,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 
 	if( r->record_handle )
 	{
-		if( SetHWParams( r->record_handle, &r->sps, &r->channelsRec, &r->bufsize, r ) < 0 )
+		if( SetHWParams( r->record_handle, &r->spsRec, &r->channelsRec, &r->bufsize, r ) < 0 )
 			goto fail;
 		if( SetSWParams( r, r->record_handle, 1 ) < 0 )
 			goto fail;
@@ -329,7 +330,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 		r->threadRec = OGCreateThread( RecThread, r );
 	}
 
-	printf( ".2.%p %p   %d %d %d\n", r->playback_handle, r->record_handle, r->sps, r->channelsRec, r->channelsPlay );
+	printf( "CNFA Alsa Init Out -> %p %p  (%d %d) %d %d\n", r->playback_handle, r->record_handle, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec );
 
 	return r;
 
@@ -346,7 +347,7 @@ fail:
 
 
 
-void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
+void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
 	struct CNFADriverAlsa * r = (struct CNFADriverAlsa *)malloc( sizeof( struct CNFADriverAlsa ) );
 
@@ -354,7 +355,8 @@ void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPS, int re
 	r->StateFn = CNFAStateAlsa;
 	r->callback = cb;
 	r->opaque = opaque;
-	r->sps = reqSPS;
+	r->spsPlay = reqSPSPlay;
+	r->spsRec = reqSPSRec;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsPlay;
 
