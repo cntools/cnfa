@@ -50,7 +50,8 @@ struct CNFADriverWASAPI
 	CNFACBType Callback;
 	short ChannelCountOut; // Not yet used.
 	short ChannelCountIn; // How many cahnnels the input stream has per frame. E.g. stereo = 2.
-	int SampleRate;
+	int SampleRateOut;
+	int SampleRateIn;
 	void* Opaque; // Not relevant to us
 
 	// Adjustable WASAPI-specific items
@@ -239,7 +240,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	//WASAPIState->MixFormat->nAvgBytesPerSec = WASAPIState->MixFormat->nSamplesPerSec * WASAPIState->MixFormat->nBlockAlign;
 
 	WASAPIState->ChannelCountIn = WASAPIState->MixFormat->nChannels;
-	WASAPIState->SampleRate = WASAPIState->MixFormat->nSamplesPerSec;
+	WASAPIState->SampleRateIn = WASAPIState->MixFormat->nSamplesPerSec;
 	WASAPIState->BytesPerFrame = WASAPIState->MixFormat->nChannels * (WASAPIState->MixFormat->wBitsPerSample / 8);
 
 	REFERENCE_TIME DefaultInterval, MinimumInterval;
@@ -446,7 +447,7 @@ void* ProcessEventAudioIn(void* stateObj)
 // Begins preparation of the WASAPI driver.
 // callback: The user application's function where audio data is placed when received from the system and/or audio data is retrieved from to give to the system.
 // sessionName: How your session will appear to the end user if you play audio.
-// reqSampleRate: Sample rate you'd like to request. Ignored, as this is determined by the system. See note below.
+// reqSampleRateIn/Out: Sample rate you'd like to request. Ignored, as this is determined by the system. See note below.
 // reqChannelsIn: Input channel count you'd like to request. Ignored, as this is determined by the system. See note below.
 // reqChannelsOut: Output channel count you'd like to request. Ignored, as this is determined by the system. See note below.
 // sugBufferSize: Buffer size you'd like to request. Ignored, as this is determined by the system. See note below.
@@ -461,7 +462,7 @@ void* ProcessEventAudioIn(void* stateObj)
 // Regarding format requests: Sample rate and channel count is determined by the system settings, and cannot be changed. Resampling/mixing will be required in your application if you cannot accept the current system mode. Make sure to check `WASAPIState` for the current system mode.
 //                            Note also that both sample rate and channel count can vary between input and output!
 // Currently audio output (playing) is not yet implemented.
-void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice, void* opaque)
+void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRateOut, int reqSampleRateIn, int reqChannelsOut, int reqChannelsIn, int sugBufferSize, const char* inputDevice, const char* outputDevice, void* opaque)
 {
 	struct CNFADriverWASAPI * InitState = malloc(sizeof(struct CNFADriverWASAPI));
 	memset(InitState, 0, sizeof(*InitState));
@@ -470,7 +471,8 @@ void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int req
 	InitState->Callback = callback;
 	InitState->Opaque = opaque;
 	// TODO: Waiting for CNFA to support directional sample rates.
-	InitState->SampleRate = reqSampleRate; // Will be overridden by the actual system setting.
+	InitState->SampleRateIn = reqSampleRateIn; // Will be overridden by the actual system setting.
+	InitState->SampleRateOut = reqSampleRateOut; // Will be overridden by the actual system setting.
 	InitState->ChannelCountIn = reqChannelsIn; // Will be overridden by the actual system setting.
 	InitState->ChannelCountOut = reqChannelsOut; // Will be overridden by the actual system setting.
 	InitState->InputDeviceID = inputDevice;

@@ -49,8 +49,8 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn )
 	}
 }
 
-struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPS,
-	int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque)
+struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec,
+	int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque)
 {
 
 #if defined( ANDROID ) || defined( __android__ )
@@ -70,7 +70,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 			{
 				return 0;
 			}
-			ret = (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPS, reqChannelsRec, reqChannelsPlay, sugBufferSize, inputSelect, outputSelect, opaque );
+			ret = (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, inputSelect, outputSelect, opaque );
 			if( ret )
 			{
 				return ret;
@@ -88,7 +88,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 			}
 			if( strcmp( CNFADriverNames[i], driver_name ) == 0 )
 			{
-				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPS, reqChannelsRec, reqChannelsPlay, sugBufferSize, inputSelect, outputSelect, opaque );
+				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, inputSelect, outputSelect, opaque );
 			}
 		}
 	}

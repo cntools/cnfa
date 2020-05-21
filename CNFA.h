@@ -28,7 +28,7 @@ extern "C" {
 //I.e. if `out` is null, only use in to read.  If in is null, only place samples in out.
 typedef void(*CNFACBType)( struct CNFADriver * sd, short * in, short * out, int framesr, int framesp );
 
-typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
+typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
 
 struct CNFADriver
 {
@@ -37,7 +37,8 @@ struct CNFADriver
 	CNFACBType callback;
 	short channelsPlay;
 	short channelsRec;
-	int sps;
+	int spsPlay;
+	int spsRec;
 	void * opaque;
 
 	//More fields may exist on a per-sound-driver basis
@@ -47,15 +48,17 @@ struct CNFADriver
 //If DriverName = 0 or empty, will try to find best driver.
 //
 // our_source_name is an optional argument, but on some platforms controls the name of your endpoint.
-// reqSPS = 44100 is guaranteed on many platforms.
+// reqSPSPlay = 44100 is guaranteed on many platforms.
+// reqSPSRec = 44100 is guaranteed on many platforms.
+//   NOTE: Some platforms do not allow SPS play and REC to deviate from each other.
 // reqChannelsRec = 1 or 2 guaranteed on many platforms.
 // reqChannelsPlay = 1 or 2 guaranteedon many platforms. NOTE: Some systems require ChannelsPlay == ChannelsRec!
 // sugBufferSize = No promises.
 // inputSelect = No standardization, NULL is OK for default.
 // outputSelect = No standardization, NULL is OK for default.
 
-struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPS, int reqChannelsRec,
-	int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
+struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay,
+	int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
 	
 int CNFAState( struct CNFADriver * cnfaobject ); //returns bitmask.  1 if mic recording, 2 if play back running, 3 if both running.
 void CNFAClose( struct CNFADriver * cnfaobject );

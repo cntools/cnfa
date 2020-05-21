@@ -11,7 +11,8 @@ struct CNFADriverNull
 	CNFACBType callback;
 	short channelsPlay;
 	short channelsRec;
-	int sps;
+	int spsPlay;
+	int spsRec;
 	void * opaque;
 };
 
@@ -26,13 +27,14 @@ int CNFAStateNull( void * object )
 }
 
 
-void * InitCNFANull( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
+void * InitCNFANull( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
 {
 	struct CNFADriverNull * r = (struct CNFADriverNull *)malloc( sizeof( struct CNFADriverNull ) );
 	r->CloseFn = CloseCNFANull;
 	r->StateFn = CNFAStateNull;
 	r->callback = cb;
-	r->sps = reqSPS;
+	r->spsPlay = reqSPSPlay;
+	r->spsRec = reqSPSRec;
 	r->opaque = opaque;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
