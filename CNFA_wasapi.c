@@ -496,4 +496,4 @@ void* InitCNFAWASAPIDriver(
 	return StartWASAPIDriver(InitState);
 }
 
-REGISTER_CNFA(cnfa_wasapi, 10, "WASAPI", InitCNFAWASAPIDriver);
+REGISTER_CNFA(cnfa_wasapi, 5, "WASAPI", InitCNFAWASAPIDriver);
