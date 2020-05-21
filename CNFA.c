@@ -22,7 +22,6 @@ static int CNFADriverPriorities[MAX_CNFA_DRIVERS];
 
 void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn )
 {
-	printf("[SDE] Registering driver %s\n", name);
 	int j;
 
 	if( priority <= 0 )

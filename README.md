@@ -27,5 +27,5 @@ void Callback( struct CNFADriver * sd, short * in, short * out, int framesr, int
 }
 ```
 
-This repo does not contain any tests or building, as this is intended as a library-only.  For any use, please see colorchord: https://github.com/cnlohr/colohrchord
+This repo does not contain any tests or building, as this is intended as a library-only.  For any use, please see colorchord: https://github.com/cnlohr/colorchord
 
