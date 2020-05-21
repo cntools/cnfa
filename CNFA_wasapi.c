@@ -31,7 +31,13 @@ static IMMDevice* WASAPIGetDefaultDevice(BOOL isCapture, BOOL isMultimedia);
 static void WASAPIPrintAllDeviceLists();
 static void WASAPIPrintDeviceList(EDataFlow dataFlow);
 void* ProcessEventAudioIn(void* stateObj);
-void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRate, int reqChannelsIn, int reqChannelsOut, int sugBufferSize, const char* inputDevice, const char* outputDevice, void* opaque);
+void* InitCNFAWASAPIDriver(
+	CNFACBType callback, const char *session_name, 
+	int reqSampleRateOut, int reqSampleRateIn, 
+	int reqChannelsOut, int reqChannelsIn, int sugBufferSize, 
+	const char * inputDevice, const char * outputDevice, 
+	void * opaque
+);
 
 DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xBCDE0395L, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
 DEFINE_GUID(IID_IMMDeviceEnumerator, 0xA95664D2L, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
@@ -462,7 +468,12 @@ void* ProcessEventAudioIn(void* stateObj)
 // Regarding format requests: Sample rate and channel count is determined by the system settings, and cannot be changed. Resampling/mixing will be required in your application if you cannot accept the current system mode. Make sure to check `WASAPIState` for the current system mode.
 //                            Note also that both sample rate and channel count can vary between input and output!
 // Currently audio output (playing) is not yet implemented.
-void* InitCNFAWASAPIDriver(CNFACBType callback, const char* sessionName, int reqSampleRateOut, int reqSampleRateIn, int reqChannelsOut, int reqChannelsIn, int sugBufferSize, const char* inputDevice, const char* outputDevice, void* opaque)
+void* InitCNFAWASAPIDriver(
+	CNFACBType callback, const char *sessionName, 
+	int reqSampleRateOut, int reqSampleRateIn, 
+	int reqChannelsOut, int reqChannelsIn, int sugBufferSize, 
+	const char * inputDevice, const char * outputDevice, 
+	void * opaque)
 {
 	struct CNFADriverWASAPI * InitState = malloc(sizeof(struct CNFADriverWASAPI));
 	memset(InitState, 0, sizeof(*InitState));
