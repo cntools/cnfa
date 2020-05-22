@@ -79,7 +79,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 		}
 		if( bestinit )
 		{
-			ret = (struct CNFADriver *)bestinit( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, inputSelect, outputSelect, opaque );
+			ret = (struct CNFADriver *)bestinit( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, outputSelect, inputSelect, opaque );
 		}
 		if( ret )
 		{
@@ -96,7 +96,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 			}
 			if( strcmp( CNFADriverNames[i], driver_name ) == 0 )
 			{
-				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, inputSelect, outputSelect, opaque );
+				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, outputSelect, inputSelect, opaque );
 			}
 		}
 	}

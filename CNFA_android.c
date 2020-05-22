@@ -286,7 +286,7 @@ int AndroidHasPermissions(const char* perm_name);
 void AndroidRequestAppPermissions(const char * perm);
 
 
-void * InitCNFAAndroid( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
+void * InitCNFAAndroid( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque )
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid *)malloc( sizeof( struct CNFADriverAndroid ) );
 	memset( r, 0, sizeof( *r) );

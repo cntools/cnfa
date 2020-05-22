@@ -151,7 +151,7 @@ void pa_state_cb(pa_context *c, void *userdata) {
 }
 
 
-void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
+void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque )
 {
 	static pa_buffer_attr bufattr;
 	static pa_sample_spec ss;
@@ -254,6 +254,8 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 //		                     	PA_STREAM_AUTO_TIMING_UPDATE
 //								PA_STREAM_NOFLAGS
 				);
+
+printf( "PA REC RES: %d\n", ret );
 
 		if( ret < 0 )
 		{
