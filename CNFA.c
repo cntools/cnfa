@@ -49,7 +49,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn )
 }
 
 struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec,
-	int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque)
+	int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque)
 {
 
 #if defined( ANDROID ) || defined( __android__ )

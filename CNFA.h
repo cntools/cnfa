@@ -38,7 +38,7 @@ extern "C" {
 //I.e. if `out` is null, only use in to read.  If in is null, only place samples in out.
 typedef void(*CNFACBType)( struct CNFADriver * sd, short * in, short * out, int framesr, int framesp );
 
-typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
+typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque );
 
 struct CNFADriver
 {
