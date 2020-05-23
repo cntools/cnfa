@@ -60,6 +60,8 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 
 	int i;
 	struct CNFADriver * ret = 0;
+	int minprio = 100000;
+	CNFAInitFn * bestinit = 0;
 	if( driver_name == 0 || strlen( driver_name ) == 0 )
 	{
 		//Search for a driver.
@@ -67,30 +69,38 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 		{
 			if( CNFADrivers[i] == 0 )
 			{
-				return 0;
+				break;
 			}
-			ret = (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, inputSelect, outputSelect, opaque );
-			if( ret )
+			if( CNFADriverPriorities[i] < minprio )
 			{
-				return ret;
+				minprio = CNFADriverPriorities[i];
+				bestinit = CNFADrivers[i];
 			}
+		}
+		if( bestinit )
+		{
+			ret = (struct CNFADriver *)bestinit( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, outputSelect, inputSelect, opaque );
+		}
+		if( ret )
+		{
+			return ret;
 		}
 	}
 	else
 	{
-		printf( "Initializing CNFA.  Recommended driver: %s\n", driver_name );
 		for( i = 0; i < MAX_CNFA_DRIVERS; i++ )
 		{
 			if( CNFADrivers[i] == 0 )
 			{
-				return 0;
+				break;
 			}
 			if( strcmp( CNFADriverNames[i], driver_name ) == 0 )
 			{
-				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, inputSelect, outputSelect, opaque );
+				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, outputSelect, inputSelect, opaque );
 			}
 		}
 	}
+	printf( "CNFA Driver not found.\n" );
 	return 0;
 }
 

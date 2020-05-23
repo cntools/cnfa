@@ -472,7 +472,7 @@ void* InitCNFAWASAPIDriver(
 	CNFACBType callback, const char *sessionName, 
 	int reqSampleRateOut, int reqSampleRateIn, 
 	int reqChannelsOut, int reqChannelsIn, int sugBufferSize, 
-	const char * inputDevice, const char * outputDevice, 
+	const char * outputDevice, const char * inputDevice, 
 	void * opaque)
 {
 	struct CNFADriverWASAPI * InitState = malloc(sizeof(struct CNFADriverWASAPI));
@@ -496,4 +496,4 @@ void* InitCNFAWASAPIDriver(
 	return StartWASAPIDriver(InitState);
 }
 
-REGISTER_CNFA(cnfa_wasapi, 10, "WASAPI", InitCNFAWASAPIDriver);
+REGISTER_CNFA(cnfa_wasapi, 5, "WASAPI", InitCNFAWASAPIDriver);

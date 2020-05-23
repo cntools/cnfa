@@ -54,11 +54,11 @@ struct CNFADriver
 // reqChannelsRec = 1 or 2 guaranteed on many platforms.
 // reqChannelsPlay = 1 or 2 guaranteedon many platforms. NOTE: Some systems require ChannelsPlay == ChannelsRec!
 // sugBufferSize = No promises.
-// inputSelect = No standardization, NULL is OK for default.
 // outputSelect = No standardization, NULL is OK for default.
+// inputSelect = No standardization, NULL is OK for default.
 
 struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay,
-	int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
+	int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque );
 	
 int CNFAState( struct CNFADriver * cnfaobject ); //returns bitmask.  1 if mic recording, 2 if play back running, 3 if both running.
 void CNFAClose( struct CNFADriver * cnfaobject );
