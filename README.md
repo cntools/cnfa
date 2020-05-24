@@ -43,7 +43,7 @@ This repo does not contain any tests or building, as this is intended as a libra
 
 
 ### Building .DLL and .SO files
-If you would like to use CNFA in a project where using a DLL or SO file is more practical, you can easily build those files. The below steps assume you are using the Clang compiler. (TCC and others should work fine as well, just have not been tested)
+If you would like to use CNFA in a project where using a DLL or SO file is more practical, you can easily build those files. The below steps are for the Clang & GGC compilers, but others like TCC should work fine as well, just have not been tested.
 
 NOTE: In order for functions to be exported, you'll need to make sure `-DBUILD_DLL` is specified!
 
