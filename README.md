@@ -55,6 +55,6 @@ Windows build:
 ```
 
 Linux build:
-```
-
+```Bash
+gcc CNFA.c -shared -fpic -o CNFA.so -DCNFA_IMPLEMENTATION -DBUILD_DLL -I"[RAWDRAW PATH]" -lasound -lpulse -lpthread -lm -lpulse-simple
 ```
