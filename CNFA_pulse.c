@@ -27,7 +27,8 @@ struct CNFADriverPulse
 	CNFACBType callback;
 	short channelsPlay;
 	short channelsRec;
-	int sps;
+	int spsPlay;
+	int spsRec;
 	void * opaque;
 
 	char * sourceNamePlay;
@@ -95,7 +96,7 @@ static void stream_request_cb(pa_stream *s, size_t length, void *userdata)
 	{
 		return;
 	}
-	short bufp[length*r->channelsPlay];
+	short bufp[length*r->channelsPlay/sizeof(short)];
 	r->callback( (struct CNFADriver*)r, 0, bufp, 0, length/(sizeof(short)*r->channelsPlay) );
 	pa_stream_write(r->play, &bufp[0], length, NULL, 0LL, PA_SEEK_RELATIVE);
 }
@@ -150,7 +151,7 @@ void pa_state_cb(pa_context *c, void *userdata) {
 }
 
 
-void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
+void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque )
 {
 	static pa_buffer_attr bufattr;
 	static pa_sample_spec ss;
@@ -170,7 +171,8 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 	r->StateFn = CNFAStatePulse;
 	r->callback = cb;
 	r->opaque = opaque;
-	r->sps = reqSPS;
+	r->spsPlay = reqSPSPlay;
+	r->spsRec = reqSPSRec;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
 	r->sourceNamePlay = outputSelect?strdup(outputSelect):0;
@@ -180,12 +182,11 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 	r->rec = 0;
 	r->buffer = sugBufferSize;
 
-	printf ("Pulse: from: %s/%s (%s) / %dx(%d,%d) (%d)\n", r->sourceNameRec, r->sourceNamePlay, title, r->sps, r->channelsPlay, r->channelsRec, r->buffer );
+	printf ("Pulse: from: %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNameRec, r->sourceNamePlay, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
 
 	memset( &ss, 0, sizeof( ss ) );
 
 	ss.format = PA_SAMPLE_S16NE;
-	ss.rate = r->sps;
 
 	r->pa_ready = 0;
 	pa_context_set_state_callback(r->pa_ctx, pa_state_cb, &r->pa_ready);
@@ -200,6 +201,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 	if( r->channelsPlay )
 	{
 		ss.channels = r->channelsPlay;
+		ss.rate = r->spsPlay;
 
 		if (!(r->play = pa_stream_new(r->pa_ctx, "Play", &ss, NULL))) {
 			error = -3; //XXX ??? TODO
@@ -231,6 +233,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 	if( r->channelsRec )
 	{
 		ss.channels = r->channelsRec;
+		ss.rate = r->spsRec;
 
 		if (!(r->rec = pa_stream_new(r->pa_ctx, "Record", &ss, NULL))) {
 			error = -3; //XXX ??? TODO
@@ -251,6 +254,8 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPS, int req
 //		                     	PA_STREAM_AUTO_TIMING_UPDATE
 //								PA_STREAM_NOFLAGS
 				);
+
+printf( "PA REC RES: %d\n", ret );
 
 		if( ret < 0 )
 		{

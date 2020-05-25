@@ -8,6 +8,13 @@
 #include <mmsystem.h>
 #include <stdlib.h>
 
+#if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
+                     || defined(_WIN32) || defined(_WIN64)
+#ifndef strdup
+#define strdup _strdup
+#endif
+#endif
+
 #if defined(WIN32) && !defined( TCC )
 #pragma comment(lib,"winmm.lib")
 #endif
@@ -22,7 +29,8 @@ struct CNFADriverWin
 	CNFACBType callback;
 	short channelsPlay;
 	short channelsRec;
-	int sps;
+	int spsPlay;
+	int spsRec;
 	void * opaque;
 
 	char * sInputDev;
@@ -106,7 +114,7 @@ void CALLBACK HANDLEMIC(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwpa
 
 	case MM_WIM_DATA:
 		ob = (w->GOBUFFRec+(BUFFS))%BUFFS;
-		w->callback( (struct CNFADriver*)w, (short*)(w->WavBuffIn[w->GOBUFFRec]).lpData, 0, w->buffer/(2*w->channelsRec), 0 );
+		w->callback( (struct CNFADriver*)w, (short*)(w->WavBuffIn[w->GOBUFFRec]).lpData, 0, w->buffer, 0 );
 		waveInAddBuffer(w->hMyWaveIn,&(w->WavBuffIn[w->GOBUFFRec]),sizeof(WAVEHDR));
 		w->GOBUFFRec = ( w->GOBUFFRec + 1 ) % BUFFS;
 		break;
@@ -130,7 +138,7 @@ void CALLBACK HANDLESINK(HWAVEIN hwi, UINT umsg, DWORD dwi, DWORD hdr, DWORD dwp
 		break;
 
 	case MM_WOM_DONE:
-		w->callback( (struct CNFADriver*)w, 0, (short*)(w->WavBuffOut[w->GOBUFFPlay]).lpData, 0, w->buffer/(2*w->channelsPlay) );
+		w->callback( (struct CNFADriver*)w, 0, (short*)(w->WavBuffOut[w->GOBUFFPlay]).lpData, 0, w->buffer );
 		waveOutWrite( w->hMyWaveOut, &(w->WavBuffOut[w->GOBUFFPlay]),sizeof(WAVEHDR) );
 		w->GOBUFFPlay = ( w->GOBUFFPlay + 1 ) % BUFFS;
 		break;
@@ -143,15 +151,15 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 	int i;
 	WAVEFORMATEX wfmt;
 	memset( &wfmt, 0, sizeof(wfmt) );
-	printf ("WFMT Size (debugging temp for TCC): %d\n", sizeof(wfmt) );
-	printf( "WFMT: %d %d %d\n", r->channelsRec, r->sps, r->sps * r->channelsRec );
+	printf ("WFMT Size (debugging temp for TCC): %llu\n", sizeof(wfmt) );
+	printf( "WFMT: %d %d %d\n", r->channelsRec, r->spsRec, r->spsRec * r->channelsRec );
 	w = r;
 	
 	wfmt.wFormatTag = WAVE_FORMAT_PCM;
 	wfmt.nChannels = r->channelsRec;
-	wfmt.nAvgBytesPerSec = r->sps * r->channelsRec;
+	wfmt.nAvgBytesPerSec = r->spsRec * r->channelsRec;
 	wfmt.nBlockAlign = r->channelsRec * 2;
-	wfmt.nSamplesPerSec = r->sps;
+	wfmt.nSamplesPerSec = r->spsRec;
 	wfmt.wBitsPerSample = 16;
 	wfmt.cbSize = 0;
 
@@ -161,7 +169,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 
 	if( r->channelsRec )
 	{
-		printf( "In Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %d\n", waveInGetNumDevs(), WAVE_MAPPER, dwdeviceR );
+		printf( "In Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %ld\n", waveInGetNumDevs(), WAVE_MAPPER, dwdeviceR );
 		int p = waveInOpen(&r->hMyWaveIn, dwdeviceR, &wfmt, (intptr_t)(&HANDLEMIC), 0, CALLBACK_FUNCTION);
 		if( p )
 		{
@@ -188,12 +196,13 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 	}
 
 	wfmt.nChannels = r->channelsPlay;
-	wfmt.nAvgBytesPerSec = r->sps * r->channelsPlay;
+	wfmt.nAvgBytesPerSec = r->spsPlay * r->channelsPlay;
 	wfmt.nBlockAlign = r->channelsPlay * 2;
-	
+	wfmt.nSamplesPerSec = r->spsPlay;
+
 	if( r->channelsPlay )
 	{
-		printf( "Out Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %d\n", waveOutGetNumDevs(), WAVE_MAPPER, dwdeviceP );
+		printf( "Out Wave Devs: %d; WAVE_MAPPER: %d; Selected Input: %ld\n", waveOutGetNumDevs(), WAVE_MAPPER, dwdeviceP );
 		int p = waveOutOpen( &r->hMyWaveOut, dwdeviceP, &wfmt, (intptr_t)(void*)(&HANDLESINK), (intptr_t)r, CALLBACK_FUNCTION);
 		if( p )
 		{
@@ -216,7 +225,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 
 
 
-void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPS, int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque )
+void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque )
 {
 	struct CNFADriverWin * r = (struct CNFADriverWin *)malloc( sizeof( struct CNFADriverWin ) );
 	memset( r, 0, sizeof(*r) );
@@ -224,7 +233,8 @@ void * InitCNFAWin( CNFACBType cb, const char * your_name, int reqSPS, int reqCh
 	r->StateFn = CNFAStateWin;
 	r->callback = cb;
 	r->opaque = opaque;
-	r->sps = reqSPS;
+	r->spsPlay = reqSPSPlay;
+	r->spsRec = reqSPSRec;
 	r->channelsPlay = reqChannelsPlay;
 	r->channelsRec = reqChannelsRec;
 	r->buffer = sugBufferSize;

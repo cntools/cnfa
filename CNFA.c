@@ -9,6 +9,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
+                     || defined(_WIN32) || defined(_WIN64)
+#ifndef strdup
+#define strdup _strdup
+#endif
+#endif 
+
 static CNFAInitFn * CNFADrivers[MAX_CNFA_DRIVERS];
 static char * CNFADriverNames[MAX_CNFA_DRIVERS];
 static int CNFADriverPriorities[MAX_CNFA_DRIVERS];
@@ -41,8 +48,8 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn )
 	}
 }
 
-struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPS,
-	int reqChannelsRec, int reqChannelsPlay, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque)
+struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec,
+	int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque)
 {
 
 #if defined( ANDROID ) || defined( __android__ )
@@ -53,6 +60,8 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 
 	int i;
 	struct CNFADriver * ret = 0;
+	int minprio = 100000;
+	CNFAInitFn * bestinit = 0;
 	if( driver_name == 0 || strlen( driver_name ) == 0 )
 	{
 		//Search for a driver.
@@ -60,30 +69,38 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 		{
 			if( CNFADrivers[i] == 0 )
 			{
-				return 0;
+				break;
 			}
-			ret = (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPS, reqChannelsRec, reqChannelsPlay, sugBufferSize, inputSelect, outputSelect, opaque );
-			if( ret )
+			if( CNFADriverPriorities[i] < minprio )
 			{
-				return ret;
+				minprio = CNFADriverPriorities[i];
+				bestinit = CNFADrivers[i];
 			}
+		}
+		if( bestinit )
+		{
+			ret = (struct CNFADriver *)bestinit( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, outputSelect, inputSelect, opaque );
+		}
+		if( ret )
+		{
+			return ret;
 		}
 	}
 	else
 	{
-		printf( "Initializing CNFA.  Recommended driver: %s\n", driver_name );
 		for( i = 0; i < MAX_CNFA_DRIVERS; i++ )
 		{
 			if( CNFADrivers[i] == 0 )
 			{
-				return 0;
+				break;
 			}
 			if( strcmp( CNFADriverNames[i], driver_name ) == 0 )
 			{
-				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPS, reqChannelsRec, reqChannelsPlay, sugBufferSize, inputSelect, outputSelect, opaque );
+				return (struct CNFADriver *)CNFADrivers[i]( cb, your_name, reqSPSPlay, reqSPSRec, reqChannelsPlay, reqChannelsRec, sugBufferSize, outputSelect, inputSelect, opaque );
 			}
 		}
 	}
+	printf( "CNFA Driver not found.\n" );
 	return 0;
 }
 
