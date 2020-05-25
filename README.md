@@ -56,5 +56,15 @@ Windows build:
 
 Linux build:
 ```Bash
-gcc CNFA.c -shared -fpic -o CNFA.so -DCNFA_IMPLEMENTATION -DBUILD_DLL -I"[RAWDRAW PATH]" -lasound -lpulse -lpthread -lm -lpulse-simple
+make shared-example
+```
+This will build the shared library as `libCNFA.so` and will build the example
+project to link against it. You can run the example project with `./example`.
+The makefile will try and copy the `os_generic.h` header from 
+[rawdraw](https://github.com/cntools/rawdraw) 
+automatically using `wget`.
+
+The command to build simply build the shared library is:
+```Bash
+gcc CNFA.c -shared -fpic -o CNFA.so -DCNFA_IMPLEMENTATION -DBUILD_DLL -I"[RAWDRAW PATH]" -lasound -lpulse -lpthread
 ```
