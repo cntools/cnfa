@@ -182,7 +182,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 	r->rec = 0;
 	r->buffer = sugBufferSize;
 
-	printf ("Pulse: from: %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNameRec, r->sourceNamePlay, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
+	printf ("Pulse: from: [O/I] %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNamePlay, r->sourceNameRec, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
 
 	memset( &ss, 0, sizeof( ss ) );
 
@@ -217,7 +217,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		bufattr.minreq = 0;
 		bufattr.prebuf =  (uint32_t)-1;
 		bufattr.tlength = bufbytes*3;
-		int ret = pa_stream_connect_playback(r->play, r->sourceNameRec, &bufattr,
+		int ret = pa_stream_connect_playback(r->play, r->sourceNamePlay, &bufattr,
 				                    // PA_STREAM_INTERPOLATE_TIMING
 				                    // |PA_STREAM_ADJUST_LATENCY //Some servers don't like the adjust_latency flag.
 				                    // |PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL);
@@ -248,7 +248,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		bufattr.minreq = bufbytes;
 		bufattr.prebuf = (uint32_t)-1;
 		bufattr.tlength = bufbytes*3;
-		int ret = pa_stream_connect_record(r->rec, r->sourceNamePlay, &bufattr, 
+		int ret = pa_stream_connect_record(r->rec, r->sourceNameRec, &bufattr, 
 //							       PA_STREAM_INTERPOLATE_TIMING
 			                       PA_STREAM_ADJUST_LATENCY  //Some servers don't like the adjust_latency flag.
 //		                     	PA_STREAM_AUTO_TIMING_UPDATE
