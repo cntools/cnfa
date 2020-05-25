@@ -132,8 +132,14 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	WASAPIState->SessionID = &CNFA_GUID;
 
 	HRESULT ErrorCode;
-	ErrorCode = CoInitialize(NULL); // TODO: Consider using CoInitializeEx if needed for threading.
+	#ifndef BUILD_DLL
+	// A library should never call CoInitialize, as it needs to be done from the host program according to its threading model needs.
+	// NOTE: If you are getting errors, and you are using CNFA as a DLL, you need to call CoInitialize yourself with an appropriate threading model for your needs!
+	// When the host program is something like ColorChord on the other hand, it cannot be expected to call CoInitialize itself, so we do it on its behalf.
+	//   This restricts the threading model of direct consumers of CNFA, but we can address that if it does ever become an issue.
+	ErrorCode = CoInitialize(NULL);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "COM INIT FAILED!"); return WASAPIState; }
+	#endif
 
 	if(WASAPI_EXTRA_DEBUG)
 	{

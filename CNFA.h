@@ -24,11 +24,21 @@ struct CNFADriver;
 extern "C" {
 #endif
 
+#ifdef BUILD_DLL
+	#ifdef WINDOWS
+		#define DllExport __declspec( dllexport )
+	#else
+		#define DllExport extern
+	#endif
+#else
+	#define DllExport
+#endif
+
 //NOTE: Some drivers have synchronous duplex mode, other drivers will use two different callbacks.  If ether is unavailable, it will be NULL.
 //I.e. if `out` is null, only use in to read.  If in is null, only place samples in out.
 typedef void(*CNFACBType)( struct CNFADriver * sd, short * in, short * out, int framesr, int framesp );
 
-typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * inputSelect, const char * outputSelect, void * opaque );
+typedef void*(CNFAInitFn)( CNFACBType cb, const char * your_name, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque );
 
 struct CNFADriver
 {
@@ -57,11 +67,11 @@ struct CNFADriver
 // outputSelect = No standardization, NULL is OK for default.
 // inputSelect = No standardization, NULL is OK for default.
 
-struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay,
+DllExport struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, CNFACBType cb, int reqSPSPlay, int reqSPSRec, int reqChannelsPlay,
 	int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque );
 	
-int CNFAState( struct CNFADriver * cnfaobject ); //returns bitmask.  1 if mic recording, 2 if play back running, 3 if both running.
-void CNFAClose( struct CNFADriver * cnfaobject );
+DllExport int CNFAState( struct CNFADriver * cnfaobject ); //returns bitmask.  1 if mic recording, 2 if play back running, 3 if both running.
+DllExport void CNFAClose( struct CNFADriver * cnfaobject );
 
 
 //Called by various sound drivers.  Notice priority must be greater than 0.  Priority of 0 or less will not register.
