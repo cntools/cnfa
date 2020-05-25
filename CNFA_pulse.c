@@ -157,11 +157,24 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 	static pa_sample_spec ss;
 	int error;
 	pa_mainloop_api *pa_mlapi;
+	const char * title = your_name;
+
 	struct CNFADriverPulse * r = (struct CNFADriverPulse *)malloc( sizeof( struct CNFADriverPulse ) );
 
 	r->pa_ml = pa_mainloop_new();
+	if( !r->pa_ml )
+	{
+		fprintf( stderr, "Failed to initialize pa_mainloop_new()\n" );
+		goto fail;
+	}
+
 	pa_mlapi = pa_mainloop_get_api(r->pa_ml);
-	const char * title = your_name;
+	if( !pa_mlapi )
+	{
+		fprintf( stderr, "Failed to initialize pa_mainloop_get_api()\n" );
+		goto fail;
+	}
+
 	r->pa_ctx = pa_context_new(pa_mlapi, title );
 	pa_context_connect(r->pa_ctx, NULL, PA_CONTEXT_NOFLAGS, NULL);
 

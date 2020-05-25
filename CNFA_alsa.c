@@ -47,6 +47,7 @@ void CloseCNFAAlsa( void * v )
 		if( r->threadRec ) OGJoinThread( r->threadRec );
 
 		OGUSleep(2000);
+
 		if( r->devRec ) free( r->devRec );
 		if( r->devPlay ) free( r->devPlay );
 		free( r );
