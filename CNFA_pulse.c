@@ -217,7 +217,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		bufattr.minreq = 0;
 		bufattr.prebuf =  (uint32_t)-1;
 		bufattr.tlength = bufbytes*3;
-		int ret = pa_stream_connect_playback(r->play, r->sourceNameRec, &bufattr,
+		int ret = pa_stream_connect_playback(r->play, r->sourceNamePlay, &bufattr,
 				                    // PA_STREAM_INTERPOLATE_TIMING
 				                    // |PA_STREAM_ADJUST_LATENCY //Some servers don't like the adjust_latency flag.
 				                    // |PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL);
@@ -248,7 +248,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		bufattr.minreq = bufbytes;
 		bufattr.prebuf = (uint32_t)-1;
 		bufattr.tlength = bufbytes*3;
-		int ret = pa_stream_connect_record(r->rec, r->sourceNamePlay, &bufattr, 
+		int ret = pa_stream_connect_record(r->rec, r->sourceNameRec, &bufattr, 
 //							       PA_STREAM_INTERPOLATE_TIMING
 			                       PA_STREAM_ADJUST_LATENCY  //Some servers don't like the adjust_latency flag.
 //		                     	PA_STREAM_AUTO_TIMING_UPDATE
