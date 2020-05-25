@@ -182,7 +182,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 	r->rec = 0;
 	r->buffer = sugBufferSize;
 
-	printf ("Pulse: from: [I/O] %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNamePlay, r->sourceNameRec, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
+	printf ("Pulse: from: [O/I] %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNamePlay, r->sourceNameRec, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
 
 	memset( &ss, 0, sizeof( ss ) );
 
