@@ -29,7 +29,7 @@ void CNFAClose(struct CNFADriver* cnfaobject)
 Then it goes and calls a callback function, the `CNFACBType cb` parameter.  This can feed you new frames, or you can pass frames back in.
 
 ```C
-void Callback(struct CNFADriver* sd, short* in, short* out, int framesr, int framesp)
+void Callback(struct CNFADriver* sd, short* out, short* in, int framesp, int framesr)
 {
   int i;
   for( i = 0; i < framesr * sd->channelsRec; i++ ) 
