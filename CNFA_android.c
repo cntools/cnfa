@@ -56,14 +56,14 @@ struct CNFADriverAndroid
 void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid*)context;
-	r->callback( (struct CNFADriver*)r, r->recorderBuffer, 0, r->buffsz/(sizeof(short)*r->channelsRec), 0 );
+	r->callback( (struct CNFADriver*)r, 0, r->recorderBuffer, 0, r->buffsz/(sizeof(short)*r->channelsRec) );
 	(*r->recorderBufferQueue)->Enqueue( r->recorderBufferQueue, r->recorderBuffer, r->recorderBufferSizeBytes/(r->channelsRec*sizeof(short)) );
 }
 
 void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct CNFADriverAndroid * r = (struct CNFADriverAndroid*)context;
-	r->callback( (struct CNFADriver*)r, 0, r->playerBuffer, 0, r->buffsz/(sizeof(short)*r->channelsPlay) );
+	r->callback( (struct CNFADriver*)r, r->playerBuffer, 0, r->buffsz/(sizeof(short)*r->channelsPlay), 0 );
 	(*r->playerBufferQueue)->Enqueue( r->playerBufferQueue, r->playerBuffer, r->playerBufferSizeBytes/(r->channelsPlay*sizeof(short)));
 }
 

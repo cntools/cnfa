@@ -211,7 +211,7 @@ void * RecThread( void * v )
 			fprintf( stderr, "Warning: ALSA Recording Underflow\n" );
 		}
 		r->recording = 1;
-		r->callback( (struct CNFADriver *)r, samples, 0, err, 0 );
+		r->callback( (struct CNFADriver *)r, 0, samples, 0, err );
 	} while( 1 );
 	r->recording = 0;
 	fprintf( stderr, "ALSA Recording Stopped\n" );
@@ -226,14 +226,14 @@ void * PlayThread( void * v )
 	//int total_avail = snd_pcm_avail(r->playback_handle);
 
 	snd_pcm_start(r->playback_handle);
-	r->callback( (struct CNFADriver *)r, 0, samples, 0, r->bufsize );
+	r->callback( (struct CNFADriver *)r, samples, 0, r->bufsize, 0 );
 	err = snd_pcm_writei(r->playback_handle, samples, r->bufsize);
 
 	while( err >= 0 )
 	{
 	//	int avail = snd_pcm_avail(r->playback_handle);
 	//	printf( "avail: %d\n", avail );
-		r->callback( (struct CNFADriver *)r, 0, samples, 0, r->bufsize );
+		r->callback( (struct CNFADriver *)r, samples, 0, r->bufsize, 0 );
 		err = snd_pcm_writei(r->playback_handle, samples, r->bufsize);
 		if( err != r->bufsize )
 		{

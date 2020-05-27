@@ -416,7 +416,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			
 			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] SILENCE buffer received. Passing on %d samples.\n", Length); }
 
-			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, Length / state->MixFormat->nChannels, 0);
+			WASAPIState->Callback((struct CNFADriver*)WASAPIState, 0, AudioData, 0, Length / state->MixFormat->nChannels );
 			free(AudioData);
 		}
 		else
@@ -435,7 +435,7 @@ void* ProcessEventAudioIn(void* stateObj)
 
 			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] Got %d bytes of audio data in %d frames. Fowarding to %p.\n", Size, FramesAvailable, (void*) WASAPIState->Callback); }
 
-			WASAPIState->Callback((struct CNFADriver*)WASAPIState, AudioData, 0, FramesAvailable, 0);
+			WASAPIState->Callback((struct CNFADriver*)WASAPIState, 0, AudioData, 0, FramesAvailable );
 			free(AudioData);
 		}
 

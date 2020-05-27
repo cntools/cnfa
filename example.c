@@ -14,7 +14,7 @@ double omega = 0;
 int totalframesr = 0;
 int totalframesp = 0;
 
-void Callback( struct CNFADriver * sd, short * in, short * out, int framesr, int framesp )
+void Callback( struct CNFADriver * sd, short * out, short * in, int framesp, int framesr )
 {
 	int i;
 
