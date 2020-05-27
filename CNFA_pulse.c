@@ -97,7 +97,7 @@ static void stream_request_cb(pa_stream *s, size_t length, void *userdata)
 		return;
 	}
 	short bufp[length*r->channelsPlay/sizeof(short)];
-	r->callback( (struct CNFADriver*)r, 0, bufp, 0, length/(sizeof(short)*r->channelsPlay) );
+	r->callback( (struct CNFADriver*)r, bufp, 0, length/(sizeof(short)*r->channelsPlay), 0 );
 	pa_stream_write(r->play, &bufp[0], length, NULL, 0LL, PA_SEEK_RELATIVE);
 }
 
@@ -117,7 +117,7 @@ static void stream_record_cb(pa_stream *s, size_t length, void *userdata)
     buffer = (short*)pa_xmalloc(length);
     memcpy(buffer, bufr, length);
 	pa_stream_drop(r->rec);
-	r->callback( (struct CNFADriver*)r, buffer, 0, length/(sizeof(short)*r->channelsRec), 0 );
+	r->callback( (struct CNFADriver*)r, 0, buffer, 0, length/(sizeof(short)*r->channelsRec) );
 	pa_xfree( buffer );
 }
 
