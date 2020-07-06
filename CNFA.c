@@ -60,7 +60,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 
 	int i;
 	struct CNFADriver * ret = 0;
-	int minprio = 100000;
+	int minprio = 0;
 	CNFAInitFn * bestinit = 0;
 	if( driver_name == 0 || strlen( driver_name ) == 0 )
 	{
@@ -71,7 +71,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 			{
 				break;
 			}
-			if( CNFADriverPriorities[i] < minprio )
+			if( CNFADriverPriorities[i] > minprio )
 			{
 				minprio = CNFADriverPriorities[i];
 				bestinit = CNFADrivers[i];

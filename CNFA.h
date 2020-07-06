@@ -78,9 +78,13 @@ DllExport void CNFAClose( struct CNFADriver * cnfaobject );
 //This is an internal function.  Applications shouldnot call it.
 void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 
+#ifdef _MSC_VER
+#define REGISTER_CNFA( cnfadriver, priority, name, function ) \
+	void REGISTER##cnfadriver() { RegCNFADriver( priority, name, function ); }
+#else
 #define REGISTER_CNFA( cnfadriver, priority, name, function ) \
 	void __attribute__((constructor)) REGISTER##cnfadriver() { RegCNFADriver( priority, name, function ); }
-
+#endif
 
 #ifdef CNFA_IMPLEMENTATION
 #include "CNFA.c"
