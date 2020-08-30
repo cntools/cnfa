@@ -29,6 +29,8 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn )
 		return;
 	}
 
+	printf("[CNFA] Registering Driver: %s\n", name);
+
 	for( j = MAX_CNFA_DRIVERS-1; j >= 0; j-- )
 	{
 		//Cruise along, find location to insert
