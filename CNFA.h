@@ -94,9 +94,11 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #include "CNFA_wasapi.c"
 #elif defined( ANDROID ) || defined( __android__ )
 #include "CNFA_android.c"
-#else
-#include "CNFA_pulse.c"
+#elif defined(__NetBSD__) || defined(__sun)
+#include "CNFA_sun.c"
+#elif defined(__linux__)
 #include "CNFA_alsa.c"
+#include "CNFA_pulse.c"
 #endif
 #endif
 
