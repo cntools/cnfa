@@ -358,7 +358,7 @@ void * InitALSADriver( CNFACBType cb, const char * your_name, int reqSPSPlay, in
 	r->spsPlay = reqSPSPlay;
 	r->spsRec = reqSPSRec;
 	r->channelsPlay = reqChannelsPlay;
-	r->channelsRec = reqChannelsPlay;
+	r->channelsRec = reqChannelsRec;
 
 	r->devRec = (inputSelect)?strdup(inputSelect):0;
 	r->devPlay = (outputSelect)?strdup(outputSelect):0;
