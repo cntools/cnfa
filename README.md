@@ -49,6 +49,8 @@ NOTE: In order for functions to be exported, you'll need to make sure `-DBUILD_D
 
 Parts of CNFA rely on [rawdraw](https://github.com/cntools/rawdraw), so make sure to clone this repo somewhere and insert the path to it in the `[RAWDRAW PATH]` space below:
 
+**Don't forget to install all libraries' headers!** For Linux, at least these packages: `libasound2-dev`, `libpulse-dev`
+
 Windows build:
 ```PS
 & "C:\Program Files\LLVM\bin\clang.exe" CNFA.c -shared -o CNFA.dll -DWINDOWS -DCNFA_IMPLEMENTATION -DBUILD_DLL -D_CRT_SECURE_NO_WARNINGS -I"[RAWDRAW PATH]" -lmmdevapi -lavrt -lole32
