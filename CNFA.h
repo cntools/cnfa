@@ -86,6 +86,13 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 	void __attribute__((constructor)) REGISTER##cnfadriver() { RegCNFADriver( priority, name, function ); }
 #endif
 
+
+#ifdef __TINYC__
+#ifndef TCC
+#define TCC
+#endif
+#endif
+
 #ifdef CNFA_IMPLEMENTATION
 #include "CNFA.c"
 #include "CNFA_null.c"

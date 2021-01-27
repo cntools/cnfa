@@ -29,12 +29,15 @@ enum _AUDCLNT_BUFFERFLAGS
     AUDCLNT_BUFFERFLAGS_SILENT	= 0x2,
     AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR	= 0x4
 } ;
-#define PropVariantInit(pvar) memset ( (pvar), 0, sizeof(PROPVARIANT) )
+
 
 #ifndef REFIID 
 #define REFIID const IID * __MIDL_CONST
 #endif
 
+#ifndef PropVariantInit
+#define PropVariantInit(pvar) memset ( (pvar), 0, sizeof(PROPVARIANT) )
+#endif
 
 #if defined (__TINYC__)
 #define _COM_Outptr_
@@ -71,6 +74,7 @@ typedef struct _tagpropertykey {
     DWORD pid;
 } PROPERTYKEY;
 
+#ifndef __wtypes_h__
 typedef struct tagDEC {
     USHORT wReserved;
     BYTE scale;
@@ -83,6 +87,7 @@ typedef struct tagDEC {
 typedef BYTE PROPVAR_PAD1;
 typedef BYTE PROPVAR_PAD2;
 typedef ULONG PROPVAR_PAD3;
+
 struct tagPROPVARIANT {
   union {
     struct tag_inner_PROPVARIANT
@@ -101,9 +106,12 @@ struct tagPROPVARIANT {
     };
 };
 
+#endif
+
 #define _Inout_updates_(dwCount)
 #define FAR
-#define WINOLEAPI
+
+
 typedef interface IUnknown IUnknown;
 typedef  IUnknown *LPUNKNOWN;
 #endif
@@ -121,8 +129,10 @@ typedef  IUnknown *LPUNKNOWN;
 // stuff to be able to read device names
 DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14);
 
+#ifndef WINOLEAPI
 #define WINOLEAPI        EXTERN_C DECLSPEC_IMPORT HRESULT STDAPICALLTYPE
 #define WINOLEAPI_(type) EXTERN_C DECLSPEC_IMPORT type STDAPICALLTYPE
+#endif
 
 // Define necessary functions
 WINOLEAPI_(HANDLE) 
