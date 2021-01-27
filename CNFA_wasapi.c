@@ -1,5 +1,8 @@
 #include "CNFA.h"
 
+//Needed libraries:  -lmmdevapi -lavrt -lole32
+//Or DLLs: C:/windows/system32/avrt.dll C:/windows/system32/ole32.dll
+
 #ifdef TCC
 #define NO_WIN_HEADERS
 #endif
@@ -17,6 +20,12 @@
 
 #include "os_generic.h"
 
+#if defined(WIN32) && !defined( TCC )
+#pragma comment(lib,"avrt.lib")
+#pragma comment(lib,"ole32.lib")
+//And maybe mmdevapi.lib
+#endif
+
 #define WASAPIPRINT(message) (printf("[WASAPI] %s\n", message))
 #define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%lX\n", message, error))
 #define PRINTGUID(guid) (printf("{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
@@ -32,10 +41,10 @@ static void WASAPIPrintAllDeviceLists();
 static void WASAPIPrintDeviceList(EDataFlow dataFlow);
 void* ProcessEventAudioIn(void* stateObj);
 void* InitCNFAWASAPIDriver(
-	CNFACBType callback, const char *session_name, 
-	int reqSampleRateOut, int reqSampleRateIn, 
-	int reqChannelsOut, int reqChannelsIn, int sugBufferSize, 
-	const char * inputDevice, const char * outputDevice, 
+	CNFACBType callback, const char *session_name,
+	int reqSampleRateOut, int reqSampleRateIn,
+	int reqChannelsOut, int reqChannelsIn, int sugBufferSize,
+	const char * inputDevice, const char * outputDevice,
 	void * opaque
 );
 
@@ -413,7 +422,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 			else { Released = TRUE; }
-			
+
 			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] SILENCE buffer received. Passing on %d samples.\n", Length); }
 
 			WASAPIState->Callback((struct CNFADriver*)WASAPIState, 0, AudioData, 0, Length / state->MixFormat->nChannels );
@@ -444,12 +453,12 @@ void* ProcessEventAudioIn(void* stateObj)
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 		}
-		
+
 	}
 
 	ErrorCode = state->Client->lpVtbl->Stop(state->Client);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to stop audio client."); }
-
+	
 	if(state->TaskHandleIn != NULL) { AvRevertMmThreadCharacteristics(state->TaskHandleIn); }
 
 	state->StreamReady = FALSE;
@@ -470,15 +479,15 @@ void* ProcessEventAudioIn(void* stateObj)
 //              A device ID as presented by WASAPI can be specified, regardless of what type it is. If it is invalid, the default capture device is used as fallback.
 //              If you do not wish to receive audio, specify null. NOT YET IMPLEMENTED
 // outputDevice: The device you want to output audio to. OUTPUT IS NOT IMPLEMENTED.
-// NOTES: 
+// NOTES:
 // Regarding format requests: Sample rate and channel count is determined by the system settings, and cannot be changed. Resampling/mixing will be required in your application if you cannot accept the current system mode. Make sure to check `WASAPIState` for the current system mode.
 //                            Note also that both sample rate and channel count can vary between input and output!
 // Currently audio output (playing) is not yet implemented.
 void* InitCNFAWASAPIDriver(
-	CNFACBType callback, const char *sessionName, 
-	int reqSampleRateOut, int reqSampleRateIn, 
-	int reqChannelsOut, int reqChannelsIn, int sugBufferSize, 
-	const char * outputDevice, const char * inputDevice, 
+	CNFACBType callback, const char *sessionName,
+	int reqSampleRateOut, int reqSampleRateIn,
+	int reqChannelsOut, int reqChannelsIn, int sugBufferSize,
+	const char * outputDevice, const char * inputDevice,
 	void * opaque)
 {
 	struct CNFADriverWASAPI * InitState = malloc(sizeof(struct CNFADriverWASAPI));
@@ -494,7 +503,7 @@ void* InitCNFAWASAPIDriver(
 	InitState->ChannelCountOut = reqChannelsOut; // Will be overridden by the actual system setting.
 	InitState->InputDeviceID = inputDevice;
 	InitState->OutputDeviceID = outputDevice;
-	
+
 	InitState->SessionName = sessionName;
 
 	WASAPIPRINT("WASAPI Init");

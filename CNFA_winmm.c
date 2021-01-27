@@ -8,6 +8,8 @@
 #include <mmsystem.h>
 #include <stdlib.h>
 
+//Include -lwinmm, or, C:/windows/system32/winmm.dll
+
 #if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
                      || defined(_WIN32) || defined(_WIN64)
 #ifndef strdup
@@ -214,7 +216,9 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 			memset( &(r->WavBuffOut[i]), 0, sizeof(r->WavBuffOut[i]) );
 			(r->WavBuffOut[i]).dwBufferLength = r->buffer*2*r->channelsPlay;
 			(r->WavBuffOut[i]).dwLoops = 1;
-			(r->WavBuffOut[i]).lpData=(char*) malloc(r->buffer*r->channelsPlay*2);
+			int size = r->buffer*r->channelsPlay*2;
+			char * buf = (r->WavBuffOut[i]).lpData=(char*) malloc(size);
+			memset( buf, 0, size );
 			p = waveOutPrepareHeader(r->hMyWaveOut,&(r->WavBuffOut[i]),sizeof(WAVEHDR));
 			waveOutWrite( r->hMyWaveOut, &(r->WavBuffOut[i]),sizeof(WAVEHDR));
 		}
