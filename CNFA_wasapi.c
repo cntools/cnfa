@@ -62,7 +62,7 @@ struct CNFADriverWASAPI
 
 	// Adjustable WASAPI-specific items
 	const char* SessionName; // The name to give our audio sessions. Otherwise, defaults to using embedded EXE name, Window title, or EXE file name directly.
-	GUID* SessionID; // In order to have different CNFA-based applications individually controllable from the volume mixer, this should be set differently for every client program, but constant across all runs/builds of that application.
+	const GUID* SessionID; // In order to have different CNFA-based applications individually controllable from the volume mixer, this should be set differently for every client program, but constant across all runs/builds of that application.
 
 	// Everything below here is for internal use only. Do not attempt to interact with these items.
 	const char* InputDeviceID; // The device to use for getting input from. Can be a render device (operating in loopback), or a capture device.
