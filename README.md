@@ -27,6 +27,9 @@ void CNFAClose(struct CNFADriver* cnfaobject)
 ```
 
 Then it goes and calls a callback function, the `CNFACBType cb` parameter.  This can feed you new frames, or you can pass frames back in.
+`framesp` is the size of one channel of the output buffer in samples. If there are multiple channels they should be interleaved i.e. L:R:L:R...
+`framerp` is the size of one channel of the input buffer in samples. Works the same way as the output buffer.
+You can obtain the number of input/output channels from `sd->channelsRec` and `sd->channelsPlay` respectively.
 
 ```C
 void Callback(struct CNFADriver* sd, short* out, short* in, int framesp, int framesr)
@@ -39,8 +42,8 @@ void Callback(struct CNFADriver* sd, short* out, short* in, int framesp, int fra
 }
 ```
 
-This repo does not contain any tests or building, as this is intended as a library-only.  For any use, please see colorchord: https://github.com/cnlohr/colorchord
-
+There are two examples in this repository, [example.c](example.c) and [wave_player.c](wave_player/wav_player.c). Both of these show examples of using
+CNFA to output sound. For use of CNFA for input see [colorchord](https://github.com/cnlohr/colorchord)
 
 ### Building .DLL and .SO files
 If you would like to use CNFA in a project where using a DLL or SO file is more practical, you can easily build those files. The below steps are for the Clang & GGC compilers, but others like TCC should work fine as well, just have not been tested.

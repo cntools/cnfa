@@ -1,12 +1,15 @@
-.PHONY: all shared shared-example clean
+.PHONY: all shared shared-example wave_player clean 
 
-all : example
+all : example wav_player
 
 os_generic.h :
 	wget https://raw.githubusercontent.com/cntools/rawdraw/master/os_generic.h
 
 example : example.c os_generic.h
 	$(CC) -o $@ $^ -lpulse -lasound -lpthread -lm
+
+wav_player: os_generic.h
+	make -C wave_player
 
 shared : os_generic.h
 	$(CC) CNFA.c -shared -fpic -o libCNFA.so -DCNFA_IMPLEMENTATION -DBUILD_DLL \
@@ -17,4 +20,5 @@ shared-example : example.c shared
 
 clean :
 	rm -rf *.o *~ example libCNFA.so
+	make -C wave_player clean
 
