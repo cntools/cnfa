@@ -5,25 +5,25 @@ all: example wav_player
 os_generic.h:
 	wget https://raw.githubusercontent.com/cntools/rawdraw/master/os_generic.h
 
-ALIBS = -lasound
+LDFLAGS = -lasound -lpthread
 ifeq "$(shell pkgconf --exists pulse && echo 'found' )" "found"
 PULSE ?= "YES"
 else
 PULSE ?= "NO"
 endif
 ifeq "$(PULSE)" "YES"
-ALIBS += -lpulse -DPULSEAUDIO
+LDFLAGS += -lpulse -DPULSEAUDIO
 endif
 
 example : example.c os_generic.h
-	$(CC) -o $@ $^ $(ALIBS) -lpthread -lm
+	$(CC) -o $@ $^ $(LDFLAGS) -lm
 
 wav_player: os_generic.h
 	make -C wave_player PULSE=$(PULSE)
 
 shared : os_generic.h
 	$(CC) CNFA.c -shared -fpic -o libCNFA.so -DCNFA_IMPLEMENTATION -DBUILD_DLL \
-		$(ALIBS) -lpthread
+		$(LDFLAGS)
 
 shared-example : example.c shared
 	$(CC) -L. -Wl,-rpath=. -o example example.c -DUSE_SHARED -lm -lCNFA
