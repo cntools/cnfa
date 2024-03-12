@@ -97,8 +97,11 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #include "CNFA.c"
 #include "CNFA_null.c"
 #if defined(WINDOWS) || defined(WIN32) || defined(WIN64)
-#include "CNFA_winmm.c"
-#include "CNFA_wasapi.c"
+  #include "CNFA_winmm.c"
+  #include <ntverp.h> // This probably won't work on pre-NT systems
+  #if VER_PRODUCTBUILD >= 7601
+    #include "CNFA_wasapi.c"
+  #endif
 #elif defined( ANDROID ) || defined( __android__ )
 #include "CNFA_android.c"
 #elif defined(__NetBSD__) || defined(__sun)
