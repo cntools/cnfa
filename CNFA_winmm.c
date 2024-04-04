@@ -9,6 +9,7 @@
 
 //Include -lwinmm, or, C:/windows/system32/winmm.dll
 
+#if defined(_MSC_VER)
 #if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
                      || defined(_WIN32) || defined(_WIN64)
 #ifndef strdup
@@ -16,8 +17,9 @@
 #endif
 #endif
 
-#if defined(WIN32) && !defined( TCC )
+#if defined(WIN32)
 #pragma comment(lib,"winmm.lib")
+#endif
 #endif
 
 #define BUFFS 3
@@ -149,7 +151,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 	WAVEFORMATEX wfmt;
 	long dwdeviceR, dwdeviceP;
 	memset( &wfmt, 0, sizeof(wfmt) );
-	printf ("WFMT Size (debugging temp for TCC): %llu\n", sizeof(wfmt) );
+	printf ("WFMT Size (debugging temp for TCC): %lu\n", sizeof(wfmt) );
 	printf( "WFMT: %d %d %d\n", r->channelsRec, r->spsRec, r->spsRec * r->channelsRec );
 	w = r;
 	
