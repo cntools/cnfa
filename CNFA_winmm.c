@@ -151,7 +151,7 @@ static struct CNFADriverWin * InitWinCNFA( struct CNFADriverWin * r )
 	WAVEFORMATEX wfmt;
 	long dwdeviceR, dwdeviceP;
 	memset( &wfmt, 0, sizeof(wfmt) );
-	printf ("WFMT Size (debugging temp for TCC): %lu\n", sizeof(wfmt) );
+	printf ("WFMT Size (debugging temp for TCC): %zu\n", sizeof(wfmt) );
 	printf( "WFMT: %d %d %d\n", r->channelsRec, r->spsRec, r->spsRec * r->channelsRec );
 	w = r;
 	
