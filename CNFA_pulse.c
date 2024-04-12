@@ -232,7 +232,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		 * If this value is exceeded then data will be lost. It is recommended to
 		 * pass (uint32_t) -1 here which will cause the server to fill in the
 		 * maximum possible value.*/
-		bufattr.maxlength = pa_usec_to_bytes(latency,&ss);
+		bufattr.maxlength = bufBytesPlay*3;
 
 		/* The target fill level of the playback buffer. The server will only send
 		 * requests for more data as long as the buffer has less than this number of
@@ -241,7 +241,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		 * the number of necessary wakeups and maximize drop-out safety. This can exceed
 		 * 2s of buffering. For low-latency applications or applications where latency
 		 * matters you should pass a proper value here. */
-		bufattr.tlength = pa_usec_to_bytes(latency,&ss);
+		bufattr.tlength = bufBytesPlay*3;
 
 		/* Number of bytes that need to be in the buffer before playback will commence.
 		 * Start of playback can be forced using pa_stream_trigger() even though the
