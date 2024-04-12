@@ -226,8 +226,6 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		pa_stream_set_underflow_callback(r->play, stream_underflow_cb, NULL);
 		pa_stream_set_write_callback(r->play, stream_request_cb, r );
 
-		static int latency = 3000; // start latency in micro seconds
-
 		/* The absolute maximum number of bytes that can be stored in the buffer.
 		 * If this value is exceeded then data will be lost. It is recommended to
 		 * pass (uint32_t) -1 here which will cause the server to fill in the
