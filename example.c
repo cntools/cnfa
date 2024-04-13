@@ -1,6 +1,13 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifdef WINDOWS
+#include <windows.h>
+#define sleep(time_s) Sleep((time_s) * 1000)
+#else
+#include <unistd.h>
+#endif
+
 // If using the shared library, don't define CNFA_IMPLEMENTATION 
 // (it's already in the library).
 #ifndef USE_SHARED
@@ -8,7 +15,7 @@
 #endif
 #include "CNFA.h"
 
-#define RUNTIME 500000
+#define RUNTIME 5
 
 double omega = 0;
 int totalframesr = 0;
@@ -45,9 +52,7 @@ int main( int argc, char ** argv )
 {
 	cnfa = CNFAInit( 
 
-		//"PULSE",
-		"ALSA", //You can select a plaback driver, or use 0 for default.
-		//0, //default
+		NULL, //You can select a plaback driver, or use NULL for default.
 		"cnfa_example", Callback, 
 		48000, //Requested samplerate for playback
 		48000, //Requested samplerate for recording
