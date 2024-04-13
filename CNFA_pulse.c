@@ -209,7 +209,8 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		pa_mainloop_iterate(r->pa_ml, 1, NULL);
 	}
 
-	int bufbytes = r->buffer * sizeof(short) * r->channelsRec;
+	int bufBytesPlay = r->buffer * sizeof(short) * r->channelsPlay;
+	int bufBytesRec = r->buffer * sizeof(short) * r->channelsRec;
 
 	if( r->channelsPlay )
 	{
@@ -225,11 +226,45 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 		pa_stream_set_underflow_callback(r->play, stream_underflow_cb, NULL);
 		pa_stream_set_write_callback(r->play, stream_request_cb, r );
 
+		/* The absolute maximum number of bytes that can be stored in the buffer.
+		 * If this value is exceeded then data will be lost. It is recommended to
+		 * pass (uint32_t) -1 here which will cause the server to fill in the
+		 * maximum possible value.*/
+		bufattr.maxlength = bufBytesPlay*3;
+
+		/* The target fill level of the playback buffer. The server will only send
+		 * requests for more data as long as the buffer has less than this number of
+		 * bytes of data. If you pass (uint32_t) -1 (which is recommended) here the
+		 * server will choose the longest target buffer fill level possible to minimize
+		 * the number of necessary wakeups and maximize drop-out safety. This can exceed
+		 * 2s of buffering. For low-latency applications or applications where latency
+		 * matters you should pass a proper value here. */
+		bufattr.tlength = bufBytesPlay*3;
+
+		/* Number of bytes that need to be in the buffer before playback will commence.
+		 * Start of playback can be forced using pa_stream_trigger() even though the
+		 * prebuffer size hasn't been reached. If a buffer underrun occurs, this
+		 * prebuffering will be again enabled. If the playback shall never stop in case
+		 * of a buffer underrun, this value should be set to 0. In that case the read
+		 * index of the output buffer overtakes the write index, and hence the fill
+		 * level of the buffer is negative. If you pass (uint32_t) -1 here (which is
+		 * recommended) the server will choose the same value as tlength here. */
+		bufattr.prebuf = (uint32_t)-1;
+
+		/* Minimum free number of the bytes in the playback buffer before the server
+		 * will request more data. It is recommended to fill in (uint32_t) -1 here. This
+		 * value influences how much time the sound server has to move data from the
+		 * per-stream server-side playback buffer to the hardware playback buffer. */
+		bufattr.minreq = (uint32_t)-1;
+
+		/* Maximum number of bytes that the server will push in one chunk for record
+		 * streams. If you pass (uint32_t) -1 (which is recommended) here, the server
+		 * will choose the longest fragment setting possible to minimize the number of
+		 * necessary wakeups and maximize drop-out safety. This can exceed 2s of
+		 * buffering. For low-latency applications or applications where latency matters
+		 * you should pass a proper value here. */
 		bufattr.fragsize = (uint32_t)-1;
-		bufattr.maxlength = bufbytes*3; //XXX TODO Consider making this -1
-		bufattr.minreq = 0;
-		bufattr.prebuf =  (uint32_t)-1;
-		bufattr.tlength = bufbytes*3;
+
 		int ret = pa_stream_connect_playback(r->play, r->sourceNamePlay, &bufattr,
 				                    // PA_STREAM_INTERPOLATE_TIMING
 				                    // |PA_STREAM_ADJUST_LATENCY //Some servers don't like the adjust_latency flag.
@@ -256,19 +291,19 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 
 		pa_stream_set_read_callback(r->rec, stream_record_cb, r );
 
-		bufattr.fragsize = bufbytes;
+		bufattr.fragsize = bufBytesRec;
 		bufattr.maxlength = (uint32_t)-1;//(uint32_t)-1; //XXX: Todo, should this be low?
-		bufattr.minreq = bufbytes;
+		bufattr.minreq = bufBytesRec;
 		bufattr.prebuf = (uint32_t)-1;
-		bufattr.tlength = bufbytes*3;
+		bufattr.tlength = bufBytesRec*3;
 		int ret = pa_stream_connect_record(r->rec, r->sourceNameRec, &bufattr, 
-//							       PA_STREAM_INTERPOLATE_TIMING
-			                       PA_STREAM_ADJUST_LATENCY  //Some servers don't like the adjust_latency flag.
-//		                     	PA_STREAM_AUTO_TIMING_UPDATE
-//								PA_STREAM_NOFLAGS
+					                      // PA_STREAM_INTERPOLATE_TIMING
+										  PA_STREAM_ADJUST_LATENCY  //Some servers don't like the adjust_latency flag.
+										  // PA_STREAM_AUTO_TIMING_UPDATE
+										  // PA_STREAM_NOFLAGS
 				);
 
-printf( "PA REC RES: %d\n", ret );
+		printf( "PA REC RES: %d\n", ret );
 
 		if( ret < 0 )
 		{
@@ -285,8 +320,7 @@ printf( "PA REC RES: %d\n", ret );
 
 	if( r->play )
 	{
-		stream_request_cb( r->play, bufbytes, r );
-		stream_request_cb( r->play, bufbytes, r );
+		stream_request_cb( r->play, bufBytesPlay, r );
 	}
 
 	return r;
@@ -304,5 +338,3 @@ fail:
 
 
 REGISTER_CNFA( PulseCNFA, 11, "PULSE", InitCNFAPulse );
-
-
