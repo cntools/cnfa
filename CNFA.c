@@ -10,8 +10,12 @@
 #include <stdlib.h>
 
 #if defined(_MSC_VER)
-#if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
-                     || defined(_WIN32) || defined(_WIN64)
+#if defined(WINDOWS) || defined(__WINDOWS__) || defined(_WINDOWS) \
+                     || defined(WIN32)       || defined(WIN64) \
+                     || defined(_WIN32)      || defined(_WIN64) \
+                     || defined(__WIN32__)   || defined(__CYGWIN__) \
+                     || defined(__MINGW32__) || defined(__MINGW64__) \
+                     || defined(__TOS_WIN__)
 #ifndef strdup
 #define strdup _strdup
 #endif
@@ -56,7 +60,7 @@ struct CNFADriver * CNFAInit( const char * driver_name, const char * your_name, 
 	int reqChannelsPlay, int reqChannelsRec, int sugBufferSize, const char * outputSelect, const char * inputSelect, void * opaque)
 {
 
-#if defined( ANDROID ) || defined( __android__ )
+#if defined(__ANDROID__) || defined(__android__) || defined(ANDROID)
 	//Android can't run static-time code.
 	void REGISTERAndroidCNFA();
 	REGISTERAndroidCNFA();

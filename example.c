@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef WINDOWS
+#if defined(WINDOWS) || defined(__WINDOWS__) || defined(_WINDOWS) \
+                     || defined(WIN32)       || defined(WIN64) \
+                     || defined(_WIN32)      || defined(_WIN64) \
+                     || defined(__WIN32__)   || defined(__CYGWIN__) \
+                     || defined(__MINGW32__) || defined(__MINGW64__) \
+                     || defined(__TOS_WIN__) || defined(_MSC_VER)
 #include <windows.h>
 #define sleep(time_s) Sleep((time_s) * 1000)
 #else
