@@ -111,6 +111,10 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #if defined(PULSEAUDIO)
 #include "CNFA_pulse.c"
 #endif
+#elif defined(__APPLE__)
+#if defined(PULSEAUDIO)
+#include "CNFA_pulse.c"
+#endif
 #endif
 #endif
 
