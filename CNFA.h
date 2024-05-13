@@ -86,6 +86,24 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 	void __attribute__((constructor)) REGISTER##cnfadriver() { RegCNFADriver( priority, name, function ); }
 #endif
 
+#if defined(WINDOWS) || defined(__WINDOWS__) || defined(_WINDOWS) \
+                     || defined(_WIN32)      || defined(_WIN64) \
+                     || defined(WIN32)       || defined(WIN64) \
+                     || defined(__WIN32__)   || defined(__CYGWIN__) \
+                     || defined(__MINGW32__) || defined(__MINGW64__) \
+                     || defined(__TOS_WIN__)
+#define CNFA_WINDOWS 1
+#elif defined( ANDROID ) || defined( __android__ ) || defined(ANDROID)
+#define CNFA_ANDROID 1
+#elif defined(__NetBSD__) || defined(__NetBSD) || defined(__sun) || defined(sun)
+#define CNFA_SUN 1
+#elif defined(__linux) || defined(__linux__) || defined(linux) || defined(__LINUX__)
+#define CNFA_LINUX 1
+#endif
+
+#if defined(PULSEAUDIO)
+#define CNFA_PULSE 1
+#endif
 
 #ifdef __TINYC__
 #ifndef TCC
@@ -96,19 +114,19 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #ifdef CNFA_IMPLEMENTATION
 #include "CNFA.c"
 #include "CNFA_null.c"
-#if defined(WINDOWS) || defined(WIN32) || defined(WIN64)
+#if CNFA_WINDOWS
   #include "CNFA_winmm.c"
   #include <ntverp.h> // This probably won't work on pre-NT systems
   #if VER_PRODUCTBUILD >= 7601
     #include "CNFA_wasapi.c"
   #endif
-#elif defined( ANDROID ) || defined( __android__ )
+#elif CNFA_ANDROID
 #include "CNFA_android.c"
-#elif defined(__NetBSD__) || defined(__sun)
+#elif CNFA_SUN
 #include "CNFA_sun.c"
-#elif defined(__linux__)
+#elif CNFA_LINUX
 #include "CNFA_alsa.c"
-#if defined(PULSEAUDIO)
+#if CNFA_PULSE
 #include "CNFA_pulse.c"
 #endif
 #elif defined(__APPLE__)
