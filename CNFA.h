@@ -98,7 +98,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #elif defined(__NetBSD__) || defined(__NetBSD) || defined(__sun) || defined(sun)
 #define CNFA_SUN 1
 #elif defined(__linux) || defined(__linux__) || defined(linux) || defined(__LINUX__)
-#define CNFA_ALSA 1
+#define CNFA_LINUX 1
 #endif
 
 #if defined(PULSEAUDIO)
@@ -124,7 +124,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #include "CNFA_android.c"
 #elif CNFA_SUN
 #include "CNFA_sun.c"
-#elif CNFA_ALSA
+#elif CNFA_LINUX
 #include "CNFA_alsa.c"
 #if CNFA_PULSE
 #include "CNFA_pulse.c"
