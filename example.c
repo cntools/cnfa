@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef WINDOWS
+#ifdef CNFA_WINDOWS
 #include <windows.h>
 #define sleep(time_s) Sleep((time_s) * 1000)
 #else

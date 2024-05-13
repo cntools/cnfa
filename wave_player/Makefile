@@ -10,7 +10,7 @@ CC ?= gcc -std=c99
 OBJS := $(C_SRCS:.c=.o)
 
 $(OUT): $(OBJS) 
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $(OUT)
+	$(CC) $(CFLAGS) $(OBJS) -o $(OUT) $(LDFLAGS) 
 
 clean:
 	rm $(OBJS) $(OUT) 

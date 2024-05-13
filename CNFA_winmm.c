@@ -10,8 +10,7 @@
 //Include -lwinmm, or, C:/windows/system32/winmm.dll
 
 #if defined(_MSC_VER)
-#if defined(WINDOWS) || defined(WIN32)  || defined(WIN64) \
-                     || defined(_WIN32) || defined(_WIN64)
+#if CNFA_WINDOWS
 #ifndef strdup
 #define strdup _strdup
 #endif
