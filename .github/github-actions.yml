@@ -20,7 +20,7 @@ jobs:
             vim
             gettext-base
             libasound2-dev
-			libpulse2-dev
+            libpulse2-dev
       - name: Check out respository code
         uses: actions/checkout@v3
         with:
