@@ -46,11 +46,13 @@ void CloseCNFASun( void * v )
 	struct CNFADriverSun * r = (struct CNFADriverSun *)v;
 	if( r )
 	{
-		if( r->playback_handle != -1 ) close (r->playback_handle);
-		if( r->record_handle != -1 ) close (r->record_handle);
-
 		if( r->threadPlay ) OGJoinThread( r->threadPlay );
 		if( r->threadRec ) OGJoinThread( r->threadRec );
+
+		OGUSleep(2000);
+
+		if( r->playback_handle != -1 ) close (r->playback_handle);
+		if( r->record_handle != -1 ) close (r->record_handle);
 
 		OGUSleep(2000);
 
