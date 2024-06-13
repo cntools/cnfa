@@ -40,11 +40,13 @@ void CloseCNFAAlsa( void * v )
 	struct CNFADriverAlsa * r = (struct CNFADriverAlsa *)v;
 	if( r )
 	{
-		if( r->playback_handle ) snd_pcm_close (r->playback_handle);
-		if( r->record_handle ) snd_pcm_close (r->record_handle);
-
 		if( r->threadPlay ) OGJoinThread( r->threadPlay );
 		if( r->threadRec ) OGJoinThread( r->threadRec );
+
+		OGUSleep(2000);
+
+		if( r->playback_handle ) snd_pcm_close (r->playback_handle);
+		if( r->record_handle ) snd_pcm_close (r->record_handle);
 
 		OGUSleep(2000);
 

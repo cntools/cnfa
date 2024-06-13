@@ -58,6 +58,10 @@ void CloseCNFAPulse( void * v )
 	struct CNFADriverPulse * r = (struct CNFADriverPulse *)v;
 	if( r )
 	{
+		OGCancelThread( r->thread );
+
+		OGUSleep(2000);
+
 		if( r->play )
 		{
 			pa_stream_unref (r->play);
@@ -69,9 +73,8 @@ void CloseCNFAPulse( void * v )
 			pa_stream_unref (r->rec);
 			r->rec = 0;
 		}
-		OGUSleep(2000);
-		OGCancelThread( r->thread );
 
+		OGUSleep(2000);
 
 		if( r->sourceNamePlay ) free( r->sourceNamePlay );
 		if( r->sourceNameRec ) free( r->sourceNameRec );
