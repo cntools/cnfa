@@ -1,0 +1,56 @@
+name: CNFA
+run-name: ${{ github.actor }} Executing
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Triggered by ${{ github.event_name }} on ${{ runner.os }}.  Branch Ref ${{ github.ref }}."
+      - name: Install dependencies.
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends
+            build-essential
+            zip
+            git
+            vim
+            gettext-base
+            libasound2-dev
+            libpulse2-dev
+      - name: Check out respository code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Building CNFA_sf.h
+        run: |
+          rm CNFA_sf.h
+          make CNFA_sf.h
+      #- name: Commit CNFA_sf.h
+      #  run: |
+      #    git_hash=$(git rev-parse --short "$GITHUB_SHA")
+      #    git commit -m "Updating CNFA_sf.h to ${git_hash}" CNFA_sf.h
+      - uses: actions/upload-artifact@v3
+        with:
+          name: cnfa_sf
+          path: CNFA_sf.h
+
+  Build-CNFA:
+    runs-on: macos-latest
+    steps:
+      - run: echo "Triggered by ${{ github.event_name }} on ${{ runner.os }}.  Branch Ref ${{ github.ref }}."
+      - name: Check out respository code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Building CNFA_sf.h
+        run: |
+          rm CNFA_sf.h
+          make CNFA_sf.h
+      - uses: actions/upload-artifact@v3
+        with:
+          name: cnfa_sf
+          path: CNFA_sf.h

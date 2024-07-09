@@ -22,7 +22,7 @@ ifeq ($(HOST_OS),Windows)
 else ifeq ($(HOST_OS),Linux)
 	LDFLAGS = -lasound -lpthread
 else ifeq ($(UNAME_S),Darwin)
-	LDFLAGS = -lpthread
+	LDFLAGS = -lpthread -framework AudioToolbox
 endif
 
 ifeq "$(shell pkgconf --exists libpulse && echo 'found' )" "found"
@@ -35,7 +35,7 @@ LDFLAGS += -lpulse -DPULSEAUDIO
 endif
 
 example : example.c os_generic.h
-	$(CC) -o $@ $^ $(LDFLAGS) -lm
+	$(CC) -o $@ $< $(LDFLAGS) -lm
 
 wav_player: shared
 	make -C wave_player PULSE=$(PULSE)

@@ -38,3 +38,20 @@ jobs:
           name: cnfa_sf
           path: CNFA_sf.h
 
+  Build-CNFA:
+    runs-on: macos-latest
+    steps:
+      - run: echo "Triggered by ${{ github.event_name }} on ${{ runner.os }}.  Branch Ref ${{ github.ref }}."
+      - name: Check out respository code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Building CNFA_sf.h
+        run: |
+          rm CNFA_sf.h
+          make CNFA_sf.h
+          make
+      - uses: actions/upload-artifact@v3
+        with:
+          name: cnfa_sf
+          path: CNFA_sf.h

@@ -1616,6 +1616,7 @@ REGISTER_CNFA( PulseCNFA, 11, "PULSE", InitCNFAPulse );
 
 #endif
 #elif defined(__APPLE__)
+#include "CNFA_coreaudio.c"
 #if defined(PULSEAUDIO)
 //Copyright 2015-2020 <>< Charles Lohr under the MIT/x11, NewBSD or ColorChord License.  You choose.
 

@@ -5,7 +5,7 @@
 // Easily output and input sound on a variety of platforms.
 //
 // Options:
-//  * #define CNFA_IMPLEMENTATION before this header and it will build all 
+//  * #define CNFA_IMPLEMENTATION before this header and it will build all
 //    definitions in.
 //
 
@@ -130,6 +130,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #include "CNFA_pulse.c"
 #endif
 #elif defined(__APPLE__)
+#include "CNFA_coreaudio.c"
 #if defined(PULSEAUDIO)
 #include "CNFA_pulse.c"
 #endif
