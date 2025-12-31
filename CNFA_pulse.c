@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define PULSE_PRINT_PREFIX "[CNFA][Pulse]: "
+
 #define BUFFERSETS 3
 
 
@@ -112,7 +114,7 @@ static void stream_record_cb(pa_stream *s, size_t length, void *userdata)
 	uint16_t * bufr;
 
     if (pa_stream_peek(r->rec, (const void**)&bufr, &length) < 0) {
-        fprintf(stderr, ("pa_stream_peek() failed: %s\n"), pa_strerror(pa_context_errno(r->pa_ctx)));
+        fprintf(stderr, (PULSE_PRINT_PREFIX"pa_stream_peek() failed: %s\n"), pa_strerror(pa_context_errno(r->pa_ctx)));
         return;
     }
 
@@ -127,7 +129,7 @@ static void stream_record_cb(pa_stream *s, size_t length, void *userdata)
 
 
 static void stream_underflow_cb(pa_stream *s, void *userdata) {
-  printf("underflow\n");
+  printf(PULSE_PRINT_PREFIX"underflow\n");
 }
 
 
@@ -167,14 +169,14 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 	r->pa_ml = pa_mainloop_new();
 	if( !r->pa_ml )
 	{
-		fprintf( stderr, "Failed to initialize pa_mainloop_new()\n" );
+		fprintf( stderr, PULSE_PRINT_PREFIX"Failed to initialize pa_mainloop_new()\n" );
 		goto fail;
 	}
 
 	pa_mlapi = pa_mainloop_get_api(r->pa_ml);
 	if( !pa_mlapi )
 	{
-		fprintf( stderr, "Failed to initialize pa_mainloop_get_api()\n" );
+		fprintf( stderr, PULSE_PRINT_PREFIX"Failed to initialize pa_mainloop_get_api()\n" );
 		goto fail;
 	}
 
@@ -198,7 +200,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 	r->rec = 0;
 	r->buffer = sugBufferSize;
 
-	printf ("Pulse: from: [O/I] %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNamePlay, r->sourceNameRec, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
+	printf (PULSE_PRINT_PREFIX"from: [O/I] %s/%s (%s) / (%d,%d)x(%d,%d) (%d)\n", r->sourceNamePlay, r->sourceNameRec, title, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec, r->buffer );
 
 	memset( &ss, 0, sizeof( ss ) );
 
@@ -222,7 +224,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 
 		if (!(r->play = pa_stream_new(r->pa_ctx, "Play", &ss, NULL))) {
 			error = -3; //XXX ??? TODO
-			fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
+			fprintf(stderr, PULSE_PRINT_PREFIX"pa_simple_new() failed: %s\n", pa_strerror(error));
 			goto fail;
 		}
 
@@ -275,7 +277,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 					PA_STREAM_NOFLAGS, NULL, NULL );
 		if( ret < 0 )
 		{
-			fprintf(stderr, __FILE__": (PLAY) pa_stream_connect_playback() failed: %s\n", pa_strerror(ret));
+			fprintf(stderr, PULSE_PRINT_PREFIX"(PLAY) pa_stream_connect_playback() failed: %s\n", pa_strerror(ret));
 			goto fail;
 		}
 
@@ -288,7 +290,7 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 
 		if (!(r->rec = pa_stream_new(r->pa_ctx, "Record", &ss, NULL))) {
 			error = -3; //XXX ??? TODO
-			fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
+			fprintf(stderr, PULSE_PRINT_PREFIX"pa_simple_new() failed: %s\n", pa_strerror(error));
 			goto fail;
 		}
 
@@ -305,17 +307,14 @@ void * InitCNFAPulse( CNFACBType cb, const char * your_name, int reqSPSPlay, int
 										  // PA_STREAM_AUTO_TIMING_UPDATE
 										  // PA_STREAM_NOFLAGS
 				);
-
-		printf( "PA REC RES: %d\n", ret );
-
 		if( ret < 0 )
 		{
-			fprintf(stderr, __FILE__": (REC) pa_stream_connect_playback() failed: %s\n", pa_strerror(ret));
+			fprintf(stderr, PULSE_PRINT_PREFIX"(REC) pa_stream_connect_playback() failed: %s\n", pa_strerror(ret));
 			goto fail;
 		}
 	}
 
-	printf( "Pulse initialized.\n" );
+	printf( PULSE_PRINT_PREFIX"initialized.\n" );
 
 
 	r->thread = OGCreateThread( CNFAThread, r );

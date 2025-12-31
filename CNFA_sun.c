@@ -8,6 +8,8 @@
 #include <string.h>
 #include <errno.h>
 
+#define SUN_PRINT_PREFIX "[CNFA][Sun]: "
+
 struct CNFADriverSun
 {
 	void (*CloseFn)( void * object );
@@ -74,14 +76,14 @@ void * RecThread( void * v )
 		int nread = read( r->record_handle, r->samplesRec, nbytes );
 		if( nread < 0 )
 		{
-			fprintf( stderr, "Warning: Sun Recording Failed\n" );
+			fprintf( stderr, SUN_PRINT_PREFIX"Recording Failed\n" );
 			break;
 		}
 		r->recording = 1;
 		r->callback( (struct CNFADriver *)r, NULL, r->samplesRec, 0, (nread / 2) / r->channelsRec);
 	} while( 1 );
 	r->recording = 0;
-	fprintf( stderr, "Sun Recording Stopped\n" );
+	fprintf( stderr, SUN_PRINT_PREFIX"Recording Stopped\n" );
 	return 0;
 }
 
@@ -101,7 +103,7 @@ void * PlayThread( void * v )
 		r->playing = 1;
 	}
 	r->playing = 0;
-	fprintf( stderr, "Sun Playback Stopped\n" );
+	fprintf( stderr, SUN_PRINT_PREFIX"Playback Stopped\n" );
 	return 0;
 }
 
@@ -121,13 +123,13 @@ static struct CNFADriverSun * InitSun( struct CNFADriverSun * r )
 		devPlay = "/dev/audio";
 	}
 
-	printf( "CNFA Sun Init -> devPlay: %s, channelsPlay: %d, spsPlay: %d, devRec: %s, channelsRec: %d, spsRec: %d\n", devPlay, r->channelsPlay, r->spsPlay, devRec, r->channelsRec, r->spsRec);
+	printf( SUN_PRINT_PREFIX"Init -> devPlay: %s, channelsPlay: %d, spsPlay: %d, devRec: %s, channelsRec: %d, spsRec: %d\n", devPlay, r->channelsPlay, r->spsPlay, devRec, r->channelsRec, r->spsRec);
 
 	if( r->channelsPlay && r->channelsRec && strcmp (devPlay, devRec) == 0 )
 	{
 		if ( (r->playback_handle = r->record_handle = open (devPlay, O_RDWR)) < 0 )
 		{
-			fprintf (stderr, "cannot open audio device (%s)\n", 
+			fprintf (stderr, SUN_PRINT_PREFIX"cannot open audio device (%s)\n", 
 				 strerror (errno));
 			goto fail;
 		}
@@ -138,7 +140,7 @@ static struct CNFADriverSun * InitSun( struct CNFADriverSun * r )
 		{
 			if ( (r->playback_handle = open (devPlay, O_WRONLY)) < 0 )
 			{
-				fprintf (stderr, "cannot open output audio device %s (%s)\n", 
+				fprintf (stderr, SUN_PRINT_PREFIX"cannot open output audio device %s (%s)\n", 
 					 r->devPlay, strerror (errno));
 				goto fail;
 			}
@@ -148,7 +150,7 @@ static struct CNFADriverSun * InitSun( struct CNFADriverSun * r )
 		{
 			if ( (r->record_handle = open (devRec, O_RDONLY)) < 0 )
 			{
-				fprintf (stderr, "cannot open input audio device %s (%s)\n", 
+				fprintf (stderr, SUN_PRINT_PREFIX"cannot open input audio device %s (%s)\n", 
 					 r->devRec, strerror (errno));
 				goto fail;
 			}
@@ -166,14 +168,14 @@ static struct CNFADriverSun * InitSun( struct CNFADriverSun * r )
 
 		if ( ioctl(r->playback_handle, AUDIO_SETINFO, &pinfo) < 0 )
 		{
-			fprintf (stderr, "cannot set audio playback format (%s)\n",
+			fprintf (stderr, SUN_PRINT_PREFIX"cannot set audio playback format (%s)\n",
 				 strerror (errno));
 			goto fail;
 		}
 
 		if ( ioctl(r->playback_handle, AUDIO_GETINFO, &pinfo) < 0 )
 		{
-			fprintf (stderr, "cannot get audio record format (%s)\n",
+			fprintf (stderr, SUN_PRINT_PREFIX"cannot get audio record format (%s)\n",
 				 strerror (errno));
 			goto fail;
 		}
@@ -198,14 +200,14 @@ static struct CNFADriverSun * InitSun( struct CNFADriverSun * r )
 
 		if ( ioctl(r->record_handle, AUDIO_SETINFO, &rinfo) < 0 )
 		{
-			fprintf (stderr, "cannot set audio record format (%s)\n",
+			fprintf (stderr, SUN_PRINT_PREFIX"cannot set audio record format (%s)\n",
 				 strerror (errno));
 			goto fail;
 		}
 
 		if ( ioctl(r->record_handle, AUDIO_GETINFO, &rinfo) < 0 )
 		{
-			fprintf (stderr, "cannot get audio record format (%s)\n",
+			fprintf (stderr, SUN_PRINT_PREFIX"cannot get audio record format (%s)\n",
 				 strerror (errno));
 			goto fail;
 		}
@@ -229,7 +231,7 @@ static struct CNFADriverSun * InitSun( struct CNFADriverSun * r )
 		r->threadRec = OGCreateThread( RecThread, r );
 	}
 
-	printf( "CNFA Sun Init Out -> channelsPlay: %d, spsPlay: %d, channelsRec: %d, spsRec: %d\n", r->channelsPlay, r->spsPlay, r->channelsRec, r->spsRec);
+	printf( SUN_PRINT_PREFIX"Init Out -> channelsPlay: %d, spsPlay: %d, channelsRec: %d, spsRec: %d\n", r->channelsPlay, r->spsPlay, r->channelsRec, r->spsRec);
 
 	return r;
 
