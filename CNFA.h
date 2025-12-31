@@ -99,6 +99,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #define CNFA_SUN 1
 #elif defined(__linux) || defined(__linux__) || defined(linux) || defined(__LINUX__)
 #define CNFA_LINUX 1
+#define CNFA_PULSE 1
 #endif
 
 #if defined(PULSEAUDIO)
