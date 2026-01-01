@@ -8,7 +8,7 @@ on:
     branches:
       - '**'
 jobs:
-  Explore-GitHub-Actions:
+  Build-CNFA_Linux:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Triggered by ${{ github.event_name }} on ${{ runner.os }}.  Branch Ref ${{ github.ref }}."
@@ -29,16 +29,26 @@ jobs:
         run: |
           rm CNFA_sf.h
           make CNFA_sf.h
+          make wav_player
       #- name: Commit CNFA_sf.h
       #  run: |
       #    git_hash=$(git rev-parse --short "$GITHUB_SHA")
       #    git commit -m "Updating CNFA_sf.h to ${git_hash}" CNFA_sf.h
       - uses: actions/upload-artifact@v4
         with:
-          name: cnfa_sf
+          name: CNFA_sf.h
           path: CNFA_sf.h
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libCNFA.so
+          path: libCNFA.so
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wav_player_linux
+          path: wav_player
+      
 
-  Build-CNFA:
+  Build-libCNFA-Mac:
     runs-on: macos-latest
     steps:
       - run: echo "Triggered by ${{ github.event_name }} on ${{ runner.os }}.  Branch Ref ${{ github.ref }}."
@@ -53,5 +63,9 @@ jobs:
           make
       - uses: actions/upload-artifact@v4
         with:
-          name: cnfa_sf
-          path: CNFA_sf.h
+          name: libCNFA.dylib
+          path: libCNFA.so
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wav_player_mac
+          path: wav_player
