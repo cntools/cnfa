@@ -33,7 +33,7 @@ jobs:
       #  run: |
       #    git_hash=$(git rev-parse --short "$GITHUB_SHA")
       #    git commit -m "Updating CNFA_sf.h to ${git_hash}" CNFA_sf.h
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: cnfa_sf
           path: CNFA_sf.h
@@ -51,7 +51,7 @@ jobs:
           rm CNFA_sf.h
           make CNFA_sf.h
           make
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: cnfa_sf
           path: CNFA_sf.h
