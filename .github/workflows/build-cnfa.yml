@@ -8,7 +8,7 @@ on:
     branches:
       - '**'
 jobs:
-  Build-CNFA_Linux:
+  Build-CNFA-Linux:
     runs-on: ubuntu-latest
     steps:
       - run: echo "Triggered by ${{ github.event_name }} on ${{ runner.os }}.  Branch Ref ${{ github.ref }}."
