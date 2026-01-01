@@ -5,6 +5,8 @@
 #include <alsa/asoundlib.h>
 #include <string.h>
 
+#define ALSA_PRINT_PREFIX "[CNFA][ALSA]: "
+
 struct CNFADriverAlsa
 {
 	void (*CloseFn)( void * object );
@@ -64,37 +66,37 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 	int dir;
 	snd_pcm_hw_params_t *hw_params;
 	if ((err = snd_pcm_hw_params_malloc (&hw_params)) < 0) {
-		fprintf (stderr, "cannot allocate hardware parameter structure (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot allocate hardware parameter structure (%s)\n",
 			 snd_strerror (err));
 		return -1;
 	}
 
 	if ((err = snd_pcm_hw_params_any (handle, hw_params)) < 0) {
-		fprintf (stderr, "cannot initialize hardware parameter structure (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot initialize hardware parameter structure (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
 
 	if ((err = snd_pcm_hw_params_set_access (handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-		fprintf (stderr, "cannot set access type (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot set access type (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
 
 	if ((err = snd_pcm_hw_params_set_format (handle, hw_params,  SND_PCM_FORMAT_S16_LE )) < 0) {
-		fprintf (stderr, "cannot set sample format (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot set sample format (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
 
 	if ((err = snd_pcm_hw_params_set_rate_near (handle, hw_params, (unsigned int*)samplerate, 0)) < 0) {
-		fprintf (stderr, "cannot set sample rate (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot set sample rate (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
 
 	if ((err = snd_pcm_hw_params_set_channels (handle, hw_params, *channels)) < 0) {
-		fprintf (stderr, "cannot set channel count (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot set channel count (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
@@ -102,7 +104,7 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 	dir = 0;
 	if( (err = snd_pcm_hw_params_set_period_size_near(handle, hw_params, bufsize, &dir)) < 0 )
 	{
-		fprintf( stderr, "cannot set period size. (%s)\n",
+		fprintf( stderr, ALSA_PRINT_PREFIX"cannot set period size. (%s)\n",
 			snd_strerror(err) );
 		goto fail;
 	}
@@ -111,14 +113,14 @@ static int SetHWParams( snd_pcm_t * handle, int * samplerate, short * channels, 
 	bufs = *bufsize*3;
 	if( (err = snd_pcm_hw_params_set_buffer_size(handle, hw_params, bufs)) < 0 )
 	{
-		fprintf( stderr, "cannot set snd_pcm_hw_params_set_buffer_size size. (%s)\n",
+		fprintf( stderr, ALSA_PRINT_PREFIX"cannot set snd_pcm_hw_params_set_buffer_size size. (%s)\n",
 			snd_strerror(err) );
 		goto fail;
 	}
 
 
 	if ((err = snd_pcm_hw_params (handle, hw_params)) < 0) {
-		fprintf (stderr, "cannot set parameters (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot set parameters (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
@@ -140,37 +142,37 @@ static int SetSWParams( struct CNFADriverAlsa * d, snd_pcm_t * handle, int isrec
 	if( !isrec )
 	{
 		if ((err = snd_pcm_sw_params_malloc (&sw_params)) < 0) {
-			fprintf (stderr, "cannot allocate software parameters structure (%s)\n",
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot allocate software parameters structure (%s)\n",
 				 snd_strerror (err));
 			goto failhard;
 		}
 		if ((err = snd_pcm_sw_params_current (handle, sw_params)) < 0) {
-			fprintf (stderr, "cannot initialize software parameters structure (%s) (%p)\n", 
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot initialize software parameters structure (%s) (%p)\n", 
 				 snd_strerror (err), handle);
 			goto fail;
 		}
 
 		int buffer_size = d->bufsize*3;
 		int period_size = d->bufsize;
-		printf( "PERIOD: %d  BUFFER: %d\n", period_size, buffer_size );
+		printf( ALSA_PRINT_PREFIX"PERIOD: %d  BUFFER: %d\n", period_size, buffer_size );
 
 		if ((err = snd_pcm_sw_params_set_avail_min (handle, sw_params, period_size )) < 0) {
-			fprintf (stderr, "cannot set minimum available count (%s)\n",
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot set minimum available count (%s)\n",
 				 snd_strerror (err));
 			goto fail;
 		}
 		//if ((err = snd_pcm_sw_params_set_stop_threshold(handle, sw_params, 512 )) < 0) {
-		//	fprintf (stderr, "cannot set minimum available count (%s)\n",
+		//	fprintf (stderr, ALSA_PRINT_PREFIX"cannot set minimum available count (%s)\n",
 		//		 snd_strerror (err));
 		//	goto fail;
 		//}
 		if ((err = snd_pcm_sw_params_set_start_threshold(handle, sw_params, buffer_size - period_size )) < 0) {
-			fprintf (stderr, "cannot set minimum available count (%s)\n",
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot set minimum available count (%s)\n",
 				 snd_strerror (err));
 			goto fail;
 		}
 		if ((err = snd_pcm_sw_params (handle, sw_params)) < 0) {
-			fprintf (stderr, "cannot set software parameters (%s)\n",
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot set software parameters (%s)\n",
 				 snd_strerror (err));
 			goto fail;
 		}
@@ -180,7 +182,7 @@ static int SetSWParams( struct CNFADriverAlsa * d, snd_pcm_t * handle, int isrec
 	}
 
 	if ((err = snd_pcm_prepare (handle)) < 0) {
-		fprintf (stderr, "cannot prepare audio interface for use (%s)\n",
+		fprintf (stderr, ALSA_PRINT_PREFIX"cannot prepare audio interface for use (%s)\n",
 			 snd_strerror (err));
 		goto fail;
 	}
@@ -205,18 +207,18 @@ void * RecThread( void * v )
 		int err = snd_pcm_readi( r->record_handle, samples, r->bufsize );	
 		if( err < 0 )
 		{
-			fprintf( stderr, "Warning: ALSA Recording Failed\n" );
+			fprintf( stderr, ALSA_PRINT_PREFIX"Warning: ALSA Recording Failed\n" );
 			break;
 		}
 		if( err != r->bufsize )
 		{
-			fprintf( stderr, "Warning: ALSA Recording Underflow\n" );
+			fprintf( stderr, ALSA_PRINT_PREFIX"Warning: ALSA Recording Underflow\n" );
 		}
 		r->recording = 1;
 		r->callback( (struct CNFADriver *)r, 0, samples, 0, err );
 	} while( 1 );
 	r->recording = 0;
-	fprintf( stderr, "ALSA Recording Stopped\n" );
+	fprintf( stderr, ALSA_PRINT_PREFIX"ALSA Recording Stopped\n" );
 	return 0;
 }
 
@@ -234,29 +236,29 @@ void * PlayThread( void * v )
 	while( err >= 0 )
 	{
 	//	int avail = snd_pcm_avail(r->playback_handle);
-	//	printf( "avail: %d\n", avail );
+	//	printf( ALSA_PRINT_PREFIX"avail: %d\n", avail );
 		r->callback( (struct CNFADriver *)r, samples, 0, r->bufsize, 0 );
 		err = snd_pcm_writei(r->playback_handle, samples, r->bufsize);
 		if( err != r->bufsize )
 		{
-			fprintf( stderr, "Warning: ALSA Playback Overflow\n" );
+			fprintf( stderr, ALSA_PRINT_PREFIX"Warning: ALSA Playback Overflow\n" );
 		}
 		r->playing = 1;
 	}
 	r->playing = 0;
-	fprintf( stderr, "ALSA Playback Stopped\n" );
+	fprintf( stderr, ALSA_PRINT_PREFIX"Playback Stopped\n" );
 	return 0;
 }
 
 static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 {
-	printf( "CNFA Alsa Init %p %p  (%d %d) %d %d\n", r->playback_handle, r->record_handle, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec );
+	printf( ALSA_PRINT_PREFIX"initialized %p %p  (%d %d) %d %d\n", r->playback_handle, r->record_handle, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec );
 
 	int err;
 	if( r->channelsPlay )
 	{
-		if ((err = snd_pcm_open (&r->playback_handle, r->devPlay?r->devPlay:"default", SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
-			fprintf (stderr, "cannot open output audio device (%s)\n", 
+		if ((err = snd_pcm_open (&r->playback_handle, r->devPlay?r->devPlay:"hw:0,0", SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot open output audio device (%s)\n", 
 				 snd_strerror (err));
 			goto fail;
 		}
@@ -264,14 +266,12 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 
 	if( r->channelsRec )
 	{
-		if ((err = snd_pcm_open (&r->record_handle, r->devRec?r->devRec:"default", SND_PCM_STREAM_CAPTURE, 0)) < 0) {
-			fprintf (stderr, "cannot open input audio device (%s)\n", 
+		if ((err = snd_pcm_open (&r->record_handle, r->devRec?r->devRec:"hw:0,0", SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+			fprintf (stderr, ALSA_PRINT_PREFIX"cannot open input audio device (%s)\n", 
 				 snd_strerror (err));
 			goto fail;
 		}
 	}
-
-	printf( "%p %p\n", r->playback_handle, r->record_handle );
 
 	if( r->playback_handle )
 	{
@@ -297,7 +297,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 		err = snd_async_add_pcm_handler(&pcm_callback, r->playback_handle, playback_callback, r);
 		if(err < 0)
 		{
-			printf("Playback callback handler error: %s\n", snd_strerror(err));
+			printf(ALSA_PRINT_PREFIX"Playback callback handler error: %s\n", snd_strerror(err));
 		}
 	}
 
@@ -308,7 +308,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 		err = snd_async_add_pcm_handler(&pcm_callback, r->record_handle, record_callback, r);
 		if(err < 0)
 		{
-			printf("Record callback handler error: %s\n", snd_strerror(err));
+			printf(ALSA_PRINT_PREFIX"Record callback handler error: %s\n", snd_strerror(err));
 		}
 	}
 #endif
@@ -318,7 +318,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 		err = snd_pcm_link ( r->playback_handle, r->record_handle );
 		if(err < 0)
 		{
-			printf("snd_pcm_link error: %s\n", snd_strerror(err));
+			printf(ALSA_PRINT_PREFIX"snd_pcm_link error: %s\n", snd_strerror(err));
 		}
 	}
 
@@ -332,7 +332,7 @@ static struct CNFADriverAlsa * InitALSA( struct CNFADriverAlsa * r )
 		r->threadRec = OGCreateThread( RecThread, r );
 	}
 
-	printf( "CNFA Alsa Init Out -> %p %p  (%d %d) %d %d\n", r->playback_handle, r->record_handle, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec );
+	printf( ALSA_PRINT_PREFIX"Init Out -> %p %p  (%d %d) %d %d\n", r->playback_handle, r->record_handle, r->spsPlay, r->spsRec, r->channelsPlay, r->channelsRec );
 
 	return r;
 
@@ -343,7 +343,7 @@ fail:
 		if( r->record_handle ) snd_pcm_close (r->record_handle);
 		free( r );
 	}
-	fprintf( stderr, "Error: ALSA failed to start.\n" );
+	fprintf( stderr, ALSA_PRINT_PREFIX"ALSA failed to start.\n" );
 	return 0;
 }
 

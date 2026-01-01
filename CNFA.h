@@ -99,6 +99,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #define CNFA_SUN 1
 #elif defined(__linux) || defined(__linux__) || defined(linux) || defined(__LINUX__)
 #define CNFA_LINUX 1
+#define CNFA_PULSE 1
 #endif
 
 #if defined(PULSEAUDIO)
@@ -115,11 +116,11 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #include "CNFA.c"
 #include "CNFA_null.c"
 #if CNFA_WINDOWS
-  #include "CNFA_winmm.c"
-  #include <ntverp.h> // This probably won't work on pre-NT systems
-  #if VER_PRODUCTBUILD >= 7601
-    #include "CNFA_wasapi.c"
-  #endif
+#include "CNFA_winmm.c"
+#include <ntverp.h> // This probably won't work on pre-NT systems
+#if VER_PRODUCTBUILD >= 7601
+#include "CNFA_wasapi.c"
+#endif
 #elif CNFA_ANDROID
 #include "CNFA_android.c"
 #elif CNFA_SUN

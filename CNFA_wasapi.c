@@ -26,8 +26,8 @@
 //And maybe mmdevapi.lib
 #endif
 
-#define WASAPIPRINT(message) (printf("[WASAPI] %s\n", message))
-#define WASAPIERROR(error, message) (printf("[WASAPI][ERR] %s HRESULT: 0x%lX\n", message, error))
+#define WASAPIPRINT(message) (printf("[CNFA][WASAPI]: %s\n", message))
+#define WASAPIERROR(error, message) (printf("[CNFA][WASAPI][ERR]: %s HRESULT: 0x%lX\n", message, error))
 #define PRINTGUID(guid) (printf("{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]))
 
 #define WASAPI_EXTRA_DEBUG FALSE
@@ -114,7 +114,7 @@ void CloseCNFAWASAPI(void* stateObj)
 		if (state->DeviceEnumerator != NULL) { state->DeviceEnumerator->lpVtbl->Release(state->DeviceEnumerator); }
 		free(stateObj);
 		CoUninitialize();
-		printf("[WASAPI] Cleanup completed. Goodbye.\n");
+		printf("[CNFA][WASAPI]: Cleanup completed. Goodbye.\n");
 	}
 }
 
@@ -152,15 +152,15 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	if(WASAPI_EXTRA_DEBUG)
 	{
-		printf("[WASAPI] CLSID for MMDeviceEnumerator: ");
+		printf("[CNFA][WASAPI]: CLSID for MMDeviceEnumerator: ");
 		PRINTGUID(CLSID_MMDeviceEnumerator);
-		printf("\n[WASAPI] IID for IMMDeviceEnumerator: ");
+		printf("\n[CNFA][WASAPI]: IID for IMMDeviceEnumerator: ");
 		PRINTGUID(IID_IMMDeviceEnumerator);
-		printf("\n[WASAPI] IID for IAudioClient: ");
+		printf("\n[CNFA][WASAPI]: IID for IAudioClient: ");
 		PRINTGUID(IID_IAudioClient);
-		printf("\n[WASAPI] IID for IAudioCaptureClient: ");
+		printf("\n[CNFA][WASAPI]: IID for IAudioCaptureClient: ");
 		PRINTGUID(IID_IAudioCaptureClient);
-		printf("\n[WASAPI] IID for IMMEndpoint: ");
+		printf("\n[CNFA][WASAPI]: IID for IMMEndpoint: ");
 		PRINTGUID(IID_IMMEndpoint);
 		printf("\n");
 	}
@@ -189,7 +189,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	{
 		BOOL IsMultimedia = TRUE;
 		if (strstr(WASAPIState->InputDeviceID, "Comm") != NULL) { IsMultimedia = FALSE; }
-		printf("[WASAPI] Attempting to use system default %s capture device as input.\n", (IsMultimedia ? "multimedia" : "communications"));
+		printf("[CNFA][WASAPI]: Attempting to use system default %s capture device as input.\n", (IsMultimedia ? "multimedia" : "communications"));
 		WASAPIState->Device = WASAPIGetDefaultDevice(TRUE, IsMultimedia);
 		DeviceDirection = 1;
 	}
@@ -198,7 +198,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		LPWSTR DeviceIDasLPWSTR;
 		DeviceIDasLPWSTR = malloc((strlen(WASAPIState->InputDeviceID) + 1) * sizeof(WCHAR));
 		mbstowcs(DeviceIDasLPWSTR, WASAPIState->InputDeviceID, strlen(WASAPIState->InputDeviceID) + 1);
-		printf("[WASAPI] Attempting to find specified device \"%ls\".\n", DeviceIDasLPWSTR);
+		printf("[CNFA][WASAPI]: Attempting to find specified device \"%ls\".\n", DeviceIDasLPWSTR);
 
 		ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDevice(WASAPIState->DeviceEnumerator, DeviceIDasLPWSTR, &(WASAPIState->Device));
 		if (FAILED(ErrorCode))
@@ -209,7 +209,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		}
 		else
 		{
-			printf("[WASAPI] Found specified device.\n");
+			printf("[CNFA][WASAPI]: Found specified device.\n");
 			DWORD DeviceState;
 			ErrorCode = WASAPIState->Device->lpVtbl->GetState(WASAPIState->Device, &DeviceState);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device state."); }
@@ -241,7 +241,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	LPWSTR DeviceID;
 	ErrorCode = WASAPIState->Device->lpVtbl->GetId(WASAPIState->Device, &DeviceID);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio device ID."); return WASAPIState; }
-	else { printf("[WASAPI] Using device ID \"%ls\", which is a %s device.\n", DeviceID, DeviceDirectionDesc); }
+	else { printf("[CNFA][WASAPI]: Using device ID \"%ls\", which is a %s device.\n", DeviceID, DeviceDirectionDesc); }
 
 	// Start an audio client and get info about the stream format.
 	ErrorCode = WASAPIState->Device->lpVtbl->Activate(WASAPIState->Device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&(WASAPIState->Client));
@@ -249,8 +249,8 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	ErrorCode = WASAPIState->Client->lpVtbl->GetMixFormat(WASAPIState->Client, &(WASAPIState->MixFormat));
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get mix format. "); return WASAPIState; }
-	printf("[WASAPI] Mix format is %d channel, %luHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
-	printf("[WASAPI] Mix format is format %d, %dB block-aligned, with %dB of extra data in this definition.\n", WASAPIState->MixFormat->wFormatTag, WASAPIState->MixFormat->nBlockAlign, WASAPIState->MixFormat->cbSize);
+	printf("[CNFA][WASAPI]: Mix format is %d channel, %luHz sample rate, %db per sample.\n", WASAPIState->MixFormat->nChannels, WASAPIState->MixFormat->nSamplesPerSec, WASAPIState->MixFormat->wBitsPerSample);
+	printf("[CNFA][WASAPI]: Mix format is format %d, %dB block-aligned, with %dB of extra data in this definition.\n", WASAPIState->MixFormat->wFormatTag, WASAPIState->MixFormat->nBlockAlign, WASAPIState->MixFormat->cbSize);
 
 	// We'll request PCM, 16bpS data from the system. It should be able to do this conversion for us, as long as we are not in exclusive mode.
 	// TODO: This isn't working, no matter what combination I try to ask it for. Figure this out, so we don't have to do the conversion ourselves.
@@ -267,7 +267,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	REFERENCE_TIME DefaultInterval, MinimumInterval;
 	ErrorCode = WASAPIState->Client->lpVtbl->GetDevicePeriod(WASAPIState->Client, &DefaultInterval, &MinimumInterval);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device timing info. "); return WASAPIState; }
-	printf("[WASAPI] Default transaction period is %lld ticks, minimum is %lld ticks.\n", DefaultInterval, MinimumInterval);
+	printf("[CNFA][WASAPI]: Default transaction period is %lld ticks, minimum is %lld ticks.\n", DefaultInterval, MinimumInterval);
 
 	// Configure a capture client.
 	UINT32 StreamFlags;
@@ -329,7 +329,7 @@ static void WASAPIPrintAllDeviceLists()
 // Prints a list of all available devices of a specified data flow direction to the console.
 static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 {
-	printf("[WASAPI] %s Devices:\n", (dataFlow == eCapture ? "Capture" : "Render"));
+	printf("[CNFA][WASAPI]: %s Devices:\n", (dataFlow == eCapture ? "Capture" : "Render"));
 	IMMDeviceCollection* Devices;
 	HRESULT ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->EnumAudioEndpoints(WASAPIState->DeviceEnumerator, dataFlow, (WASAPI_EXTRA_DEBUG ? DEVICE_STATEMASK_ALL : DEVICE_STATE_ACTIVE), &Devices);
 	if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get audio endpoints."); return; }
@@ -361,7 +361,7 @@ static void WASAPIPrintDeviceList(EDataFlow dataFlow)
 		LPWSTR DeviceFriendlyName = L"[Name Retrieval Failed]";
 		if (Variant.pwszVal != NULL) { DeviceFriendlyName = Variant.pwszVal; }
 
-		printf("[WASAPI] [%d]: \"%ls\" = \"%ls\"\n", DeviceIndex, DeviceFriendlyName, DeviceID);
+		printf("[CNFA][WASAPI]: [%d]: \"%ls\" = \"%ls\"\n", DeviceIndex, DeviceFriendlyName, DeviceID);
 
 		CoTaskMemFree(DeviceID);
 		DeviceID = NULL;
@@ -423,7 +423,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 			else { Released = TRUE; }
 
-			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] SILENCE buffer received. Passing on %d samples.\n", Length); }
+			if (WASAPI_EXTRA_DEBUG) { printf("[CNFA][WASAPI]: SILENCE buffer received. Passing on %d samples.\n", Length); }
 
 			WASAPIState->Callback((struct CNFADriver*)WASAPIState, 0, AudioData, 0, Length / state->MixFormat->nChannels );
 			free(AudioData);
@@ -442,7 +442,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
 			else { Released = TRUE; }
 
-			if (WASAPI_EXTRA_DEBUG) { printf("[WASAPI] Got %d bytes of audio data in %d frames. Fowarding to %p.\n", Size, FramesAvailable, (void*) WASAPIState->Callback); }
+			if (WASAPI_EXTRA_DEBUG) { printf("[CNFA][WASAPI]: Got %d bytes of audio data in %d frames. Fowarding to %p.\n", Size, FramesAvailable, (void*) WASAPIState->Callback); }
 
 			WASAPIState->Callback((struct CNFADriver*)WASAPIState, 0, AudioData, 0, FramesAvailable );
 			free(AudioData);
