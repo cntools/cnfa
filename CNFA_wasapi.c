@@ -1,4 +1,4 @@
-﻿#include "CNFA.h"
+#include "CNFA.h"
 
 //Needed libraries:  -lmmdevapi -lole32
 //Or DLLs: C:/windows/system32/ole32.dll
@@ -630,4 +630,4 @@ void* InitCNFAWASAPIDriver(
 	return StartWASAPIDriver(InitState);
 }
 
-REGISTER_CNFA(cnfa_wasapi, 20, "WASAPI", InitCNFAWASAPIDriver);
+REGISTER_CNFA(cnfa_wasapi, 20, "WASAPI", InitCNFAWASAPIDriver)
