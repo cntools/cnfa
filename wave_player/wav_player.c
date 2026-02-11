@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <unistd.h>
+#include "os_generic.h"
 
 #include "wavDefs.h"
 
@@ -90,7 +90,7 @@ int main (int nargs, char** args) {
 		filename = args[1];
 	}
 	else {
-		printf("\nError, no input file\nUseage %s <wave file>\n", args[0]);
+		printf("\nError, no input file\nUsage %s <wave file>\n", args[0]);
 		return 1;
 	}
 	wav_file = fopen(filename, "r");
@@ -123,7 +123,7 @@ int main (int nargs, char** args) {
 	const char* glyph = spin_glyph;
 	int i = 0;
 	while (!is_done){
-		sleep(1);
+		OGUSleep(1000000);
 		++runtime;
 		printf("\r %c ", *glyph++);
 		fflush(stdout);

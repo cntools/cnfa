@@ -8,8 +8,8 @@
 
 #include <stdint.h>
 
-//#define ABSOLUTE 1
-#ifdef ABSOLUTE
+//#define WAV_ABSOLUTE_OFFSETS 1
+#ifdef WAV_ABSOLUTE_OFFSETS
 
 	//absolute offsets PCM audacity files only
 	//          name        offset  description	
@@ -60,7 +60,7 @@
                                     //1 - 8 bit mono, 2 - 8 bit stereo/16 bit mono, 4 - 16 bit stereo
 	#define     BITS_PER_SAMPLE 22  //bits per channel 8 or 16 (unsigned char)
 
-#endif //ABSOLUTE
+#endif //WAV_ABSOLUTE_OFFSETS
 
 #define MAX_TAG_SIZE 100 //defines the maximum number of characters to be allocated for any info string
 
