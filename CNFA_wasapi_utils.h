@@ -170,6 +170,9 @@ typedef struct IMMNotificationClient IMMNotificationClient;
 typedef struct IPropertyStore IPropertyStore;
 typedef struct IAudioClient IAudioClient;
 typedef struct IAudioCaptureClient IAudioCaptureClient;
+typedef struct IAudioRenderClient IAudioRenderClient;
+typedef struct IAudioSessionControl IAudioSessionControl;
+typedef struct IAudioSessionEvents IAudioSessionEvents;
 
 // So the linker doesn't complain
 extern const IID CLSID_MMDeviceEnumerator;
@@ -177,6 +180,9 @@ extern const IID IID_IMMDeviceEnumerator;
 extern const IID IID_IAudioClient;
 extern const IID CNFA_GUID;
 extern const IID IID_IAudioCaptureClient;
+extern const IID IID_IAudioRenderClient;
+extern const IID IID_IAudioSessionControl;
+extern const IID IID_IAudioSessionEvents;
 
 typedef enum __MIDL___MIDL_itf_mmdeviceapi_0000_0000_0001
 {
@@ -596,6 +602,47 @@ interface IAudioCaptureClient
     CONST_VTBL struct IAudioCaptureClientVtbl *lpVtbl;
 };
 
+typedef struct IAudioRenderClientVtbl
+{
+    BEGIN_INTERFACE
+
+        
+        HRESULT(STDMETHODCALLTYPE* QueryInterface)(
+            IAudioRenderClient* This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */
+            _COM_Outptr_  void** ppvObject);
+
+    
+        ULONG(STDMETHODCALLTYPE* AddRef)(
+            IAudioRenderClient* This);
+
+        ULONG(STDMETHODCALLTYPE* Release)(
+            IAudioRenderClient* This);
+
+        HRESULT(STDMETHODCALLTYPE* GetBuffer)(
+            IAudioRenderClient* This,
+            /* [annotation][in] */
+            _In_  UINT32 NumFramesRequested,
+            /* [annotation][out] */
+            _Outptr_result_buffer_(_Inexpressible_("NumFramesRequested * pFormat->nBlockAlign"))  BYTE** ppData);
+
+        HRESULT(STDMETHODCALLTYPE* ReleaseBuffer)(
+            IAudioRenderClient* This,
+            /* [annotation][in] */
+            _In_  UINT32 NumFramesWritten,
+            /* [annotation][in] */
+            _In_  DWORD dwFlags);
+
+    END_INTERFACE
+} IAudioRenderClientVtbl;
+
+interface IAudioRenderClient
+{
+    CONST_VTBL struct IAudioRenderClientVtbl* lpVtbl;
+};
+
+
 typedef interface IMMEndpoint IMMEndpoint;
 
     typedef struct IMMEndpointVtbl
@@ -626,6 +673,166 @@ typedef interface IMMEndpoint IMMEndpoint;
     {
         CONST_VTBL struct IMMEndpointVtbl *lpVtbl;
     };
+
+    typedef enum _AudioSessionState
+    {
+        AudioSessionStateInactive = 0,
+        AudioSessionStateActive = 1,
+        AudioSessionStateExpired = 2
+    } AudioSessionState;
+
+    typedef enum AudioSessionDisconnectReason
+    {
+        DisconnectReasonDeviceRemoval = 0,
+        DisconnectReasonServerShutdown = (DisconnectReasonDeviceRemoval + 1),
+        DisconnectReasonFormatChanged = (DisconnectReasonServerShutdown + 1),
+        DisconnectReasonSessionLogoff = (DisconnectReasonFormatChanged + 1),
+        DisconnectReasonSessionDisconnected = (DisconnectReasonSessionLogoff + 1),
+        DisconnectReasonExclusiveModeOverride = (DisconnectReasonSessionDisconnected + 1)
+    } 	AudioSessionDisconnectReason;
+
+    typedef struct IAudioSessionEventsVtbl
+    {
+        BEGIN_INTERFACE
+
+            HRESULT(STDMETHODCALLTYPE* QueryInterface)(
+                IAudioSessionEvents* This,
+                /* [in] */ REFIID riid,
+                /* [annotation][iid_is][out] */
+                _COM_Outptr_  void** ppvObject);
+
+            ULONG(STDMETHODCALLTYPE* AddRef)(
+                IAudioSessionEvents* This);
+
+            ULONG(STDMETHODCALLTYPE* Release)(
+                IAudioSessionEvents* This);
+
+            HRESULT(STDMETHODCALLTYPE* OnDisplayNameChanged)(
+                IAudioSessionEvents* This,
+                /* [annotation][string][in] */
+                _In_  LPCWSTR NewDisplayName,
+                /* [in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* OnIconPathChanged)(
+                IAudioSessionEvents* This,
+                /* [annotation][string][in] */
+                _In_  LPCWSTR NewIconPath,
+                /* [in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* OnSimpleVolumeChanged)(
+                IAudioSessionEvents* This,
+                /* [annotation][in] */
+                _In_  float NewVolume,
+                /* [annotation][in] */
+                _In_  BOOL NewMute,
+                /* [in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* OnChannelVolumeChanged)(
+                IAudioSessionEvents* This,
+                /* [annotation][in] */
+                _In_  DWORD ChannelCount,
+                /* [annotation][size_is][in] */
+                  float NewChannelVolumeArray[],
+                /* [annotation][in] */
+                _In_  DWORD ChangedChannel,
+                /* [in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* OnGroupingParamChanged)(
+                IAudioSessionEvents* This,
+                /* [annotation][in] */
+                _In_  LPCGUID NewGroupingParam,
+                /* [in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* OnStateChanged)(
+                IAudioSessionEvents* This,
+                /* [annotation][in] */
+                _In_  AudioSessionState NewState);
+
+            HRESULT(STDMETHODCALLTYPE* OnSessionDisconnected)(
+                IAudioSessionEvents* This,
+                /* [annotation][in] */
+                _In_  AudioSessionDisconnectReason DisconnectReason);
+
+        END_INTERFACE
+    } IAudioSessionEventsVtbl;
+
+    interface IAudioSessionEvents
+    {
+        CONST_VTBL struct IAudioSessionEventsVtbl* lpVtbl;
+    };
+
+    typedef struct IAudioSessionControlVtbl
+    {
+        BEGIN_INTERFACE
+
+            HRESULT(STDMETHODCALLTYPE* QueryInterface)(
+                IAudioSessionControl* This,
+                /* [in] */ REFIID riid,
+                /* [annotation][iid_is][out] */
+                _COM_Outptr_  void** ppvObject);
+
+            ULONG(STDMETHODCALLTYPE* AddRef)(
+                IAudioSessionControl* This);
+
+            ULONG(STDMETHODCALLTYPE* Release)(
+                IAudioSessionControl* This);
+
+            HRESULT(STDMETHODCALLTYPE* GetState)(
+                IAudioSessionControl* This,
+                /* [annotation][out] */
+                _Out_  AudioSessionState* pRetVal);
+
+            HRESULT(STDMETHODCALLTYPE* GetDisplayName)(
+                IAudioSessionControl* This,
+                /* [annotation][string][out] */
+                _Out_  LPWSTR* pRetVal);
+
+            HRESULT(STDMETHODCALLTYPE* SetDisplayName)(
+                IAudioSessionControl* This,
+                /* [annotation][string][in] */
+                _In_  LPCWSTR Value,
+                /* [unique][in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* GetIconPath)(
+                IAudioSessionControl* This,
+                /* [annotation][string][out] */
+                _Out_  LPWSTR* pRetVal);
+
+            HRESULT(STDMETHODCALLTYPE* SetIconPath)(
+                IAudioSessionControl* This,
+                /* [annotation][string][in] */
+                _In_  LPCWSTR Value,
+                /* [unique][in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* GetGroupingParam)(
+                IAudioSessionControl* This,
+                /* [annotation][out] */
+                _Out_  GUID* pRetVal);
+
+            HRESULT(STDMETHODCALLTYPE* SetGroupingParam)(
+                IAudioSessionControl* This,
+                /* [annotation][in] */
+                _In_  LPCGUID Override,
+                /* [unique][in] */ LPCGUID EventContext);
+
+            HRESULT(STDMETHODCALLTYPE* RegisterAudioSessionNotification)(
+                IAudioSessionControl* This,
+                /* [annotation][in] */
+                _In_  IAudioSessionEvents* NewNotifications);
+
+            HRESULT(STDMETHODCALLTYPE* UnregisterAudioSessionNotification)(
+                IAudioSessionControl* This,
+                /* [annotation][in] */
+                _In_  IAudioSessionEvents* NewNotifications);
+
+        END_INTERFACE
+    } IAudioSessionControlVtbl;
+
+    interface IAudioSessionControl
+    {
+        CONST_VTBL struct IAudioSessionControlVtbl* lpVtbl;
+    };
+
 
 #define DEVICE_STATE_ACTIVE      0x00000001
 #define DEVICE_STATE_DISABLED    0x00000002

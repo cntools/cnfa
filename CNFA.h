@@ -118,7 +118,7 @@ void RegCNFADriver( int priority, const char * name, CNFAInitFn * fn );
 #if CNFA_WINDOWS
 #include "CNFA_winmm.c"
 #include <ntverp.h> // This probably won't work on pre-NT systems
-#if VER_PRODUCTBUILD >= 7601
+#if (VER_PRODUCTBUILD >= 7601 || defined(TCC)) // TCC can't seem to figure out NT versions?
 #include "CNFA_wasapi.c"
 #endif
 #elif CNFA_ANDROID

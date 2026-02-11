@@ -3,7 +3,7 @@
 C_SRCS = wav_player.c 
 OUT := wav_player
 
-CFLAGS   = -O2 -g -DUSE_SHARED
+CFLAGS   = -O2 -I../. -g -DUSE_SHARED
 LDFLAGS = -L../. -Wl,-rpath,. -lCNFA -lm
 CC ?= gcc -std=c99
 

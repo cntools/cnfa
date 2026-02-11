@@ -1,19 +1,19 @@
 #include <stdio.h>
 #include <math.h>
 
-#ifdef CNFA_WINDOWS
-#include <windows.h>
-#define sleep(time_s) Sleep((time_s) * 1000)
-#else
-#include <unistd.h>
-#endif
-
 // If using the shared library, don't define CNFA_IMPLEMENTATION 
 // (it's already in the library).
 #ifndef USE_SHARED
 #define CNFA_IMPLEMENTATION
 #endif
 #include "CNFA.h"
+
+#ifdef CNFA_WINDOWS
+#include <windows.h>
+#define sleep(time_s) Sleep((time_s) * 1000)
+#else
+#include <unistd.h>
+#endif
 
 #define RUNTIME 5
 
