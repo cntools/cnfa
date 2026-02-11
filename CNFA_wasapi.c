@@ -18,6 +18,7 @@
 #include "windows.h"
 #endif
 
+#include "stdio.h"
 #include "os_generic.h"
 
 #if defined(WIN32) && !defined( TCC )
@@ -114,7 +115,7 @@ void CloseCNFAWASAPI(void* stateObj)
 		if (state->DeviceEnumerator != NULL) { state->DeviceEnumerator->lpVtbl->Release(state->DeviceEnumerator); }
 		free(stateObj);
 		CoUninitialize();
-		printf("[CNFA][WASAPI]: Cleanup completed. Goodbye.\n");
+		puts("[CNFA][WASAPI]: Cleanup completed. Goodbye.\n");
 	}
 }
 
@@ -152,17 +153,17 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 
 	if(WASAPI_EXTRA_DEBUG)
 	{
-		printf("[CNFA][WASAPI]: CLSID for MMDeviceEnumerator: ");
+		puts("[CNFA][WASAPI]: CLSID for MMDeviceEnumerator: ");
 		PRINTGUID(CLSID_MMDeviceEnumerator);
-		printf("\n[CNFA][WASAPI]: IID for IMMDeviceEnumerator: ");
+		puts("\n[CNFA][WASAPI]: IID for IMMDeviceEnumerator: ");
 		PRINTGUID(IID_IMMDeviceEnumerator);
-		printf("\n[CNFA][WASAPI]: IID for IAudioClient: ");
+		puts("\n[CNFA][WASAPI]: IID for IAudioClient: ");
 		PRINTGUID(IID_IAudioClient);
-		printf("\n[CNFA][WASAPI]: IID for IAudioCaptureClient: ");
+		puts("\n[CNFA][WASAPI]: IID for IAudioCaptureClient: ");
 		PRINTGUID(IID_IAudioCaptureClient);
-		printf("\n[CNFA][WASAPI]: IID for IMMEndpoint: ");
+		puts("\n[CNFA][WASAPI]: IID for IMMEndpoint: ");
 		PRINTGUID(IID_IMMEndpoint);
-		printf("\n");
+		puts("\n");
 	}
 
 	ErrorCode = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void**)&(WASAPIState->DeviceEnumerator));
@@ -196,8 +197,10 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 	else // A specific device was selected by ID.
 	{
 		LPWSTR DeviceIDasLPWSTR;
-		DeviceIDasLPWSTR = malloc((strlen(WASAPIState->InputDeviceID) + 1) * sizeof(WCHAR));
-		mbstowcs(DeviceIDasLPWSTR, WASAPIState->InputDeviceID, strlen(WASAPIState->InputDeviceID) + 1);
+		size_t DeviceIDasLPWSTR_LenWords = strlen(WASAPIState->InputDeviceID) + 1;
+		DeviceIDasLPWSTR = malloc(DeviceIDasLPWSTR_LenWords * sizeof(WCHAR));
+		size_t CharsConverted;
+		mbstowcs_s(&CharsConverted, DeviceIDasLPWSTR, DeviceIDasLPWSTR_LenWords, WASAPIState->InputDeviceID, DeviceIDasLPWSTR_LenWords - 1);
 		printf("[CNFA][WASAPI]: Attempting to find specified device \"%ls\".\n", DeviceIDasLPWSTR);
 
 		ErrorCode = WASAPIState->DeviceEnumerator->lpVtbl->GetDevice(WASAPIState->DeviceEnumerator, DeviceIDasLPWSTR, &(WASAPIState->Device));
@@ -209,7 +212,7 @@ static struct CNFADriverWASAPI* StartWASAPIDriver(struct CNFADriverWASAPI* initS
 		}
 		else
 		{
-			printf("[CNFA][WASAPI]: Found specified device.\n");
+			puts("[CNFA][WASAPI]: Found specified device.\n");
 			DWORD DeviceState;
 			ErrorCode = WASAPIState->Device->lpVtbl->GetState(WASAPIState->Device, &DeviceState);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to get device state."); }
@@ -417,7 +420,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			UINT32 Length = FramesAvailable * state->MixFormat->nChannels;
 			if (Length == 0) { Length = state->MixFormat->nChannels; }
 			INT16* AudioData = malloc(Length * 2);
-			for (int i = 0; i < Length; i++) { AudioData[i] = 0; }
+			for (UINT32 i = 0; i < Length; i++) { AudioData[i] = 0; }
 
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
@@ -436,7 +439,7 @@ void* ProcessEventAudioIn(void* stateObj)
 			UINT32 Size = FramesAvailable * state->BytesPerFrame; // Size in bytes
 			FLOAT* DataAsFloat = (FLOAT*)DataBuffer; // The raw input data, reinterpreted as floats.
 			INT16* AudioData = malloc((FramesAvailable * state->MixFormat->nChannels) * 2); // The data we are passing to the consumer.
-			for (INT32 i = 0; i < Size / 4; i++) { AudioData[i] = (INT16)(DataAsFloat[i] * 32767.5F); }
+			for (UINT32 i = 0; i < Size / 4; i++) { AudioData[i] = (INT16)(DataAsFloat[i] * 32767.5F); }
 
 			ErrorCode = state->CaptureClient->lpVtbl->ReleaseBuffer(state->CaptureClient, FramesAvailable);
 			if (FAILED(ErrorCode)) { WASAPIERROR(ErrorCode, "Failed to release audio buffer."); }
